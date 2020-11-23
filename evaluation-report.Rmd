@@ -1,0 +1,365 @@
+---
+title: Chr 20 sandbox for pangenome construction and evaluation
+output: html_document
+---
+
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, fig.width=10)
+```
+
+```{r init}
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(DT)
+library(plotly)
+library(VariantAnnotation)
+library(GenomicRanges)
+
+winsor <- function(x, u){
+  if(any(x>u)) x[x>u] = u
+  x
+}
+```
+
+```{r info}
+## Read paths to info files from 'files.info' file
+## - 1st row is a header: experiment labels for each label (one column less than the other rows)
+## - other rows starts with info type ('graph', 'map', 'decon') and then the path to the corresponding file for each experiment
+files.info = read.table('files.info', as.is=TRUE)
+message(paste(rownames(files.info), collapse=' '))
+```
+
+# {.tabset}
+
+## Pangenome
+
+Stats from `vg stats` after chopping the nodes into max. 32 bp nodes.
+Of note, chr20 is around 64.4 Mbp long in GRCh38.
+
+```{r vgstats}
+if('graph' %in% rownames(files.info)){
+  vgs.df = lapply(colnames(files.info), function(exp){
+    vgs.r = read.table(files.info['graph', exp])
+    tibble(graph=exp,
+           length=vgs.r$V2[which(vgs.r$V1=='length')],
+           nodes=vgs.r$V2[which(vgs.r$V1=='nodes')],
+           edges=vgs.r$V2[which(vgs.r$V1=='edges')])
+  }) %>% bind_rows
+
+  vgs.df %>% mutate(edge.node.ratio=round(edges/nodes, 3), edge.node.diff=edges-nodes) %>%
+    arrange(edge.node.ratio) %>% 
+    datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
+} else {
+  cat('Not available\n')
+}
+```
+
+The degree distribution looks like this:
+
+```{r degree}
+if('degree' %in% rownames(files.info)){
+  deg.df = lapply(colnames(files.info), function(exp){
+    read.table(files.info['degree', exp], as.is=TRUE, header=TRUE) %>% mutate(graph=exp)
+  }) %>% bind_rows %>% mutate(Degree=winsor(Degree, 100))
+
+  plot_ly(x=~Degree, y=~log10(Sides), color=~graph, text=~Sides, data=deg.df,
+          hovertemplate='degree: %{x}\n%{text} nodes') %>%
+    add_lines() %>%
+    layout(xaxis=list(title='degree (per side)'), yaxis=list(title='log10(node)'),
+           legend = list(orientation = 'h'))
+} else {
+  cat('Not available\n')
+}
+```
+
+*Note: the degree is winsorized at 100 (nodes with degree>100 at grouped shown at x=100).*
+
+## Variation {.tabset}
+
+### Snarls
+
+Stats extracted from the distance index with `vg view -B`.
+As an estimate of the variation, let's look at the difference between maximum and minimum length of paths traversing the snarl.
+The *depth* represents how embedded a snarl is.
+
+```{r diststats}
+if('diststats' %in% rownames(files.info)){
+  snarls.df = lapply(colnames(files.info), function(exp){
+    read.table(files.info['diststats', exp], as.is=TRUE, sep='\t', header=TRUE) %>%
+      mutate(graph=exp, diff_length=max_length-min_length)
+  }) %>% bind_rows
+
+  snarls.df %>% group_by(graph) %>%
+    summarize(nb.snarls=n(), depth.mean=round(mean(depth), 3), min_max.dist.diff.mean=round(mean(diff_length), 3)) %>%
+    arrange(nb.snarls) %>% 
+    datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
+
+  size.breaks = c(-1, 0, 10, 49, 100, 500, 1000, 5000, 1e4, 1e5, 1e6,Inf)
+  size.labs = c('0', '1-10', '11-49', '50-100', '100-500',
+                '500-1K', '1K-5K', '5K-10K', '10K-100K', '100K-1M', '>1M')
+
+  snarls.df %>% mutate(diff_length=cut(diff_length, breaks=size.breaks, labels=size.labs)) %>%
+    group_by(graph, diff_length) %>% summarize(n=n()) %>%
+    group_by(graph) %>% mutate(prop=n/sum(n)) %>%
+    plot_ly(x=~diff_length, y=~prop, color=~graph, text=~n, data=.,
+            hovertemplate='%{x} bp\n%{text} snarls') %>%
+    add_bars() %>%
+    layout(xaxis=list(title='min-max distance difference'),
+           yaxis=list(title='proportion of snarls'),
+           legend = list(orientation = 'h'))
+
+  snarls.df %>% group_by(graph, depth) %>% summarize(n=n()) %>%
+    group_by(graph) %>% mutate(prop=n/sum(n)) %>%
+    plot_ly(x=~depth, y=~prop, color=~graph, text=~n, data=.,
+            hovertemplate='depth: %{x}\n%{text} snarls') %>%
+    add_bars() %>%
+    layout(xaxis=list(title='depth'),
+           yaxis=list(title='proportion of snarls'),
+           legend = list(orientation = 'h'))
+} else {
+  cat('Not available\n')
+}
+```
+
+### Relative to hg38
+
+Using `vg deconstruct` on the pangenome, relative to paths starting with *hg38_*.
+
+```{r deconstats}
+bin.gr = tile(GRanges('hg38', IRanges(0, 64.5e6)), width=5e5)[[1]]
+bin.gr$subjectHits = 1:length(bin.gr)
+
+if('decon' %in% rownames(files.info)){
+  vcf.l = lapply(colnames(files.info), function(exp){
+    message(exp)
+    vcf = readVcf(files.info['decon', exp], param=ScanVcfParam(samples=NA))
+    seqlevels(vcf) = 'hg38'
+    if(length(vcf)==0){
+      sum.df = tibble(graph=exp, all=0, snv=0, indel.del=0, indel.ins=0,
+                      sv.del=0, sv.ins=0)
+      bin.cov.df = tibble()
+      return(list(sum.df=sum.df, cov.df=bin.cov.df))
+    }
+    ## compute variant size from the length of seq in REF and ALT(s)
+    alt.size.c = nchar(rowRanges(vcf)$ALT)
+    size.df = tibble(
+      ref.size=rep(nchar(rowRanges(vcf)$REF), unlist(lapply(alt.size.c, length))),
+      alt.size=unlist(alt.size.c),
+      queryHits=rep(1:length(vcf), unlist(lapply(alt.size.c, length)))) %>%
+      mutate(var.size=alt.size-ref.size)
+    ## binned coverage
+    bin.cov.df = findOverlaps(vcf, bin.gr) %>% as.data.frame %>%
+      merge(size.df) %>% group_by(subjectHits) %>%
+      summarize(graph=exp,
+                base=sum(alt.size),
+                nb.snvs=sum(var.size==0),
+                nb.indels=sum(abs(var.size)<50 & var.size!=0),
+                nb.svs=sum(abs(var.size)>=50))
+    ## for size distribution
+    size.s = size.df %>%
+      mutate(graph=exp,
+             type=ifelse(var.size>0, 'INS', 'DEL'),
+             type=ifelse(var.size==0, 'SNV', type),
+             var.size=cut(abs(var.size), breaks=size.breaks, labels=size.labs)) %>%
+      group_by(graph, type, var.size) %>% summarize(n=n())
+    ## summary for the table
+    sum.df = size.df %>% summarize(
+                           graph=exp,
+                           all=length(var.size),
+                           snv=sum(var.size==0),
+                           indel.del=sum(var.size<0 & var.size>-50),
+                           indel.ins=sum(var.size>0 & var.size<50),
+                           sv.del=sum(var.size <= -50),
+                           sv.ins=sum(var.size >= 50))
+    return(list(sum.df=sum.df, cov.df=bin.cov.df, size.df=size.s))
+  })
+
+  sum.df = lapply(vcf.l, function(ll) ll$sum.df) %>% bind_rows
+  sum.df %>% arrange(all) %>% datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
+
+  ## size distribution
+  size.df = lapply(vcf.l, function(ll) ll$size.df) %>% bind_rows
+
+  size.df %>% group_by(graph, type) %>% 
+    filter(type=='DEL') %>% 
+    plot_ly(x=~var.size, y=~n, color=~graph, text=~n, data=.,
+            hovertemplate='%{x} bp\n%{text} deletions') %>%
+    add_bars() %>%
+    layout(xaxis=list(title='deletion size (bp)'),
+           yaxis=list(title='number of deletions'),
+           legend = list(orientation = 'h'))
+
+  size.df %>% group_by(graph, type) %>% 
+    filter(type=='INS') %>% 
+    plot_ly(x=~var.size, y=~n, color=~graph, text=~n, data=.,
+            hovertemplate='%{x} bp\n%{text} insertions') %>%
+    add_bars() %>%
+    layout(xaxis=list(title='insertion size (bp)'),
+           yaxis=list(title='number of insertions'),
+           legend = list(orientation = 'h'))
+
+  ## size.df %>% group_by(graph, type) %>% mutate(prop=n/sum(n)) %>%
+  ##   filter(type=='DEL') %>% 
+  ##   plot_ly(x=~var.size, y=~prop, color=~graph, text=~n, data=.,
+  ##         hovertemplate='%{x} bp\n%{text} deletions') %>%
+  ##   add_bars() %>%
+  ##   layout(xaxis=list(title='deletion size (bp)'),
+  ##          yaxis=list(title='proportion of deletions'),
+  ##          legend = list(orientation = 'h'))
+
+  ## size.df %>% group_by(graph, type) %>% mutate(prop=n/sum(n)) %>%
+  ##   filter(type=='INS') %>% 
+  ##   plot_ly(x=~var.size, y=~prop, color=~graph, text=~n, data=.,
+  ##         hovertemplate='%{x} bp\n%{text} insertions') %>%
+  ##   add_bars() %>%
+  ##   layout(xaxis=list(title='insertion size (bp)'),
+  ##          yaxis=list(title='proportion of insertions'),
+  ##          legend = list(orientation = 'h'))
+
+  ## coverage across the chromosome
+  cov.df = lapply(vcf.l, function(ll) ll$cov.df) %>% bind_rows %>% merge(as.data.frame(bin.gr))
+
+  ## normalize numbers for each graph
+  cov.df = cov.df %>% group_by(graph) %>% mutate(pos.mb=start/1e6,
+                                                 base.n=base/sum(base),
+                                                 nb.snvs.n=nb.snvs/sum(nb.snvs),
+                                                 nb.indels.n=nb.indels/sum(nb.indels),
+                                                 nb.svs.n=nb.svs/sum(nb.svs))
+
+  plot_ly(x=~pos.mb, y=~base.n, color=~graph, text=~base, data=cov.df,
+          hovertemplate='base: %{text}\nbase prop:%{y}\nposition:%{x}Mbp') %>%
+    add_lines() %>% 
+    layout(xaxis=list(title='position (Mbp)'),
+           yaxis=list(title='proportion of base changed'),
+           legend = list(orientation = 'h'))
+
+  plot_ly(x=~pos.mb, y=~nb.snvs.n, color=~graph, text=~nb.snvs, data=cov.df,
+          hovertemplate='snv: %{text}\nsnv prop:%{y}\nposition:%{x}Mbp') %>%
+    add_lines() %>% 
+    layout(xaxis=list(title='position (Mbp)'),
+           yaxis=list(title='proportion of SNVs'),
+           legend = list(orientation = 'h'))
+
+  plot_ly(x=~pos.mb, y=~nb.indels.n, color=~graph, text=~nb.indels, data=cov.df,
+          hovertemplate='indels: %{text}\nindels prop:%{y}\nposition:%{x}Mbp') %>%
+    add_lines() %>% 
+    layout(xaxis=list(title='position (Mbp)'),
+           yaxis=list(title='proportion of indels'),
+           legend = list(orientation = 'h'))
+
+  plot_ly(x=~pos.mb, y=~nb.svs.n, color=~graph, text=~nb.svs, data=cov.df,
+          hovertemplate='SV: %{text}\nSV prop:%{y}\nposition:%{x}Mbp') %>%
+    add_lines() %>% 
+    layout(xaxis=list(title='position (Mbp)'),
+           yaxis=list(title='proportion of SVs'),
+           legend = list(orientation = 'h'))
+} else {
+  cat('Not available\n')
+}
+```
+
+## Short-read Mapping stats
+
+- Reads from HG002.
+- ~50x depth.
+- Chr20 subset: reads mapping to chr20 on the GIAB SV graph.
+
+```{r mapstats}
+if('map' %in% rownames(files.info)){
+  mapq.df = lapply(colnames(files.info), function(exp){
+    mapq.r = read.table(files.info['map', exp])
+    colnames(mapq.r) = c('reads', 'mapq', 'perfect', 'match99')
+    mapq.r %>% mutate(graph=exp, perfect=as.logical(perfect), match99=as.logical(match99))
+  }) %>% bind_rows
+
+  mapq.df %>% group_by(graph) %>%
+    summarize(all=sum(reads),
+              unmapped=round(sum(reads[mapq==-1])/all, 4),
+              mapq.0=round(sum(reads[mapq==0])/all, 4),
+              mapq.60=round(sum(reads[mapq>=60])/all, 4),
+              align_99perc=round(sum(reads[match99])/all, 4),
+              perfect_align=round(sum(reads[perfect])/all, 4)) %>%
+    arrange(unmapped) %>% 
+    datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
+} else {
+  cat('Not available\n')
+}
+```
+
+The graph below shows the cumulative proportion of mapped reads for different mapping quality threshold, i.e. the proportion of mapped reads with *MAPQ>=x*.
+
+```{r mapstats.graph}
+if('map' %in% rownames(files.info)){
+  p.df = mapq.df %>% filter(mapq>-1) %>%
+    group_by(graph, mapq) %>% summarize(reads=sum(reads)) %>% 
+    arrange(graph, desc(mapq)) %>% group_by(graph) %>%
+    mutate(cum.reads=cumsum(reads), cum.reads=cum.reads/max(cum.reads))
+
+  plot_ly(p.df, x=~mapq, y=~cum.reads, color=~graph, text=~graph) %>% add_lines %>% 
+    layout(xaxis=list(title='minimum mapping quality'),
+           yaxis=list(title='proportion of mapped reads'),
+           legend = list(orientation = 'h'))
+} else {
+  cat('Not available\n')
+}
+```
+
+## Long-reads Mapping stats
+
+- CCS reads from HG002.
+- ~10x depth.
+- Chr20 subset: reads mapping to chr20 on hg38
+
+```{r mapstats.lr}
+if('maplr' %in% rownames(files.info)){
+  mapq.df = lapply(colnames(files.info), function(exp){
+    mapq.r = read.table(files.info['maplr', exp])
+    colnames(mapq.r) = c('reads', 'mapq', 'perfect', 'match99')
+    mapq.r %>% mutate(graph=exp, perfect=as.logical(perfect), match99=as.logical(match99))
+  }) %>% bind_rows
+
+  mapq.df %>% group_by(graph) %>%
+    summarize(all=sum(reads),
+              unmapped=round(sum(reads[mapq==-1])/all, 4),
+              mapq.0=round(sum(reads[mapq==0])/all, 4),
+              mapq.60=round(sum(reads[mapq>=60])/all, 4),
+              align_99perc=round(sum(reads[match99])/all, 4),
+              perfect_align=round(sum(reads[perfect])/all, 4)) %>%
+    arrange(desc(align_99perc)) %>% 
+    datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
+}
+```
+
+*No MAPQ curve for now because all reads tend to map with maximum MAPQ of 255.*
+
+## Resources
+
+Resources used to construct the pangenome, make (vg) indexes and map short reads.
+
+```{r resources}
+bench.files = tibble(file=list.files('benchmarks/', '.tsv')) %>%
+  mutate(dataset=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\1', file),
+         method=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\2', file),
+         params=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\3', file),
+         step=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\4', file),
+         exp=paste0(method, '.', params)) %>%
+  filter(make.names(exp) %in% colnames(files.info) | method %in% c('minimap2', 'fpa'))
+
+bm.df = lapply(bench.files$file, function(ff){
+    read.table(paste0('benchmarks/', ff), as.is=TRUE, header=TRUE) %>%
+      mutate(file=ff)
+}) %>% bind_rows
+
+bm.df = bm.df %>% merge(bench.files)
+
+## map.info = tibble(exp=colnames(files.info),
+##                   map=gsub('.*\\.(.*)\\.stats.txt', '\\1', files.info['map',]))
+
+bm.df %>% filter(make.names(exp) %in% colnames(files.info)) %>%
+  mutate(core.h=round((mean_load/100)*s/3600, 2), exp=factor(exp), step=factor(step)) %>% 
+  dplyr::select(step, exp, max_rss, core.h, h.m.s, mean_load) %>%
+  arrange(step, exp) %>%
+  datatable(filter='top', options=list(pageLength=10))
+```
