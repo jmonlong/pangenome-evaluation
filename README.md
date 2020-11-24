@@ -56,7 +56,7 @@ To compute the evaluation stats for one graph, start an instance with e.g. 8 cor
 git clone https://github.com/jmonlong/pangenome-evaluation
 cd pangenome-evaluation
 
-snakemake --use-singularity --configfile snakemake_config.yaml --config exp=cactus/new-cactus-parameters html_out=temp.html --cores 8 eval_srmap --forcerun eval_srmap
+snakemake --use-singularity --configfile snakemake_config.yaml --config exp=cactus/new-cactus-parameters dataset=hpp60 html_out=temp.html --cores 8 eval_srmap --forcerun eval_srmap
 ```
 
 Once all the pangenomes are created, update the `dataset`/`exp` in `snakemake_config.yaml` to make sure they list the ones to include in the report.
