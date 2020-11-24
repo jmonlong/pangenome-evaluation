@@ -123,7 +123,6 @@ rule viz:
         outf.write('vgview {}\n'.format(' '.join(input.vgview)))
         outf.write('odgiviz {}\n'.format(' '.join(input.odgiviz)))
         outf.close()
-        shell("cp {input.rmd} visualization-report.Rmd")
         shell("Rscript -e 'rmarkdown::render(\"visualization-report.Rmd\")' files.info {input.bed}")
         shell("cp visualization-report.html {output}")
 

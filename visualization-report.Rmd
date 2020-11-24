@@ -1,0 +1,107 @@
+---
+title: Visualizing regions in chr 20 pangenomes
+output: html_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, fig.width=10)
+```
+
+```{r init}
+## library(DiagrammeR)
+library(dplyr)
+library(knitr)
+library(visNetwork)
+library(htmltools)
+```
+
+```{r info}
+args = commandArgs(TRUE)
+## args = c('files.info', 'pangenome-viz-regions.bed')
+files.info = read.table(args[1], as.is=TRUE, row.names=1, header=FALSE)
+regs.df = read.table(args[2], as.is=TRUE, header=FALSE, sep='\t')
+colnames(regs.df) = c('chr', 'start', 'end', 'desc')
+```
+
+# {.tabset}
+
+## vg view {.tabset .vgview}
+
+Images made using `vg view | dot`. 
+
+Only the reference path is shown for now.
+
+```{r vgview, results='asis'}
+imgs.df = tibble(full.path=as.character(files.info['vgview',])) %>%
+  mutate(filen=basename(full.path),
+         graph=gsub('(.*)_[^_]*_c[0-9]+.dot.svg', '\\1', filen),
+         graph=gsub('[^\\.]+\\.(.*)', '\\1', graph),
+         region=gsub('.*_([^_]*)_c[0-9]+.dot.svg', '\\1', filen))
+
+tmp = lapply(unique(imgs.df$region), function(region.label){
+  cat('\n\n### ', region.label, '\n\n')
+  pos.s = gsub('.*-(.*)-.*', '\\1', region.label)
+  pos.e = gsub('.*-.*-(.*)', '\\1', region.label)
+  ## description
+  desc = regs.df %>% filter(start==pos.s, end==pos.e)
+  cat(paste0('**', region.label, ' ', desc$desc[1], '**\n\n'))
+  ## cactus hubs
+  cat(paste0('[Cactus Hub: cactus.star-single-copy-fatanc-og-july-7](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2329489_hg38&position=chr20%3A', pos.s, '%2D', pos.e, ')\n\n'))
+  cat(paste0('[Cactus Hub: cactus.minimap2_star-all-to-ref-fatanc-no-secondary-july-8](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2329541_hg38_chr20&position=chr20%3A', pos.s, '%2D', pos.e, ')\n\n'))
+  ## images
+  imgs.df = subset(imgs.df, region==region.label)
+  lapply(unique(imgs.df$graph), function(graph.label){
+    cat('\n\n#### ', graph.label, '\n\n')
+    imgs.df = subset(imgs.df, graph==graph.label)
+    fsize.mbytes = file.info(imgs.df$full.path[1])$size / 1e6
+    if(fsize.mbytes > 1){
+      cat(paste0('Skipping large file: ', basename(imgs.df$full.path[1]), ' (', round(fsize.mbytes, 2), ' Mbytes)'))
+    } else {
+      cat(paste0('<img src="', imgs.df$full.path[1], '"/>'))
+      ## cat(paste0('![](', imgs.df$full.path[1], ')'))
+    }
+  })
+})
+```
+
+## odgi viz {.tabset}
+
+Images made using `odgi viz`. 
+
+```{r odgiviz, results='asis'}
+imgs.df = tibble(full.path=as.character(files.info['odgiviz',])) %>%
+  mutate(filen=basename(full.path),
+         graph=gsub('(.*)_[^_]*_c[0-9]+.odgi.png', '\\1', filen),
+         graph=gsub('[^\\.]+\\.(.*)', '\\1', graph),
+         region=gsub('.*_([^_]*)_c[0-9]+.odgi.png', '\\1', filen))
+
+tmp = lapply(unique(imgs.df$region), function(region.label){
+  cat('\n\n### ', region.label, '\n\n')
+  pos.s = gsub('.*-(.*)-.*', '\\1', region.label)
+  pos.e = gsub('.*-.*-(.*)', '\\1', region.label)
+  ## description
+  desc = regs.df %>% filter(start==pos.s, end==pos.e)
+  cat(paste0('**', region.label, ' ', desc$desc[1], '**\n\n'))
+  ## cactus hubs
+  cat(paste0('[Cactus Hub: cactus.star-single-copy-fatanc-og-july-7](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2329489_hg38&position=chr20%3A', pos.s, '%2D', pos.e, ')\n\n'))
+  cat(paste0('[Cactus Hub: cactus.minimap2_star-all-to-ref-fatanc-no-secondary-july-8](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2329541_hg38_chr20&position=chr20%3A', pos.s, '%2D', pos.e, ')\n\n'))
+  ## images
+  imgs.df = subset(imgs.df, region==region.label)
+  lapply(unique(imgs.df$graph), function(graph.label){
+    cat('\n\n#### ', graph.label, '\n\n')
+    imgs.df = subset(imgs.df, graph==graph.label)
+    cat(paste0('![](', imgs.df$full.path[1], ')'))
+  })
+})
+```
+
+<style>
+.vgview img {
+  height: 300px;
+  max-width: 1000%;
+}
+
+.main-container {
+  margin-left: 10px;
+}
+</style>
