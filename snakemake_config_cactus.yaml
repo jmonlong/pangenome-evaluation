@@ -1,0 +1,22 @@
+## dataset
+dataset: "lc2019_12ont hpp60 hpp60"
+## experiments
+exp: "vg/linear cactus/minimap2-star-no-secondary-2020-09-04-glenn-debug cactus/minigraph-2020-10-28-dna-brnn-nu1-b100k-q5-m100-caf"
+## s3 root bucket
+s3root: 'vg-k8s/vgamb/chr20'
+## vg mapping
+mapper: "giraffe"
+min_k: 39
+min_w: 15
+cover_n: 16
+gbwt_auto: true
+map_cores: 8
+## other mapping
+mapper_lr: "ga"
+## regions to visualize
+viz_bed: "pangenome-viz-regions.bed"
+## input s3 links
+s3_input_links: 'input.graphs.s3.links.csv'
+## output
+html_out: "evaluation-report-cactus.html"
+viz_html_out: "visualization-report-cactus.html"

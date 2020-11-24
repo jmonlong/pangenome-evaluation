@@ -56,7 +56,7 @@ To compute the evaluation stats for one graph, start an instance with e.g. 8 cor
 git clone https://github.com/jmonlong/pangenome-evaluation
 cd pangenome-evaluation
 
-snakemake --use-singularity --configfile snakemake_config.yaml --config exp=cactus/new-cactus-parameters html_out=evaluation-report-temp.html --cores 8 eval_srmap --forcerun eval_srmap
+snakemake --use-singularity --configfile snakemake_config.yaml --config exp=cactus/new-cactus-parameters html_out=temp.html --cores 8 eval_srmap --forcerun eval_srmap
 ```
 
 Once all the pangenomes are created, update the `dataset`/`exp` in `snakemake_config.yaml` to make sure they list the ones to include in the report.
@@ -66,7 +66,7 @@ Then, to gather the stats and make the evaluation report, launch a small instanc
 git clone https://github.com/jmonlong/pangenome-evaluation
 cd pangenome-evaluation
 
-snakemake --use-singularity --configfile snakemake_config.yaml --config html_out=evaluation-report-hpp.html --cores 1 eval_srmap --forcerun eval_srmap
+snakemake --use-singularity --configfile snakemake_config.yaml --cores 1 eval_srmap --forcerun eval_srmap
 ```
 
 The visualization report can be ran in parallel, for example on an instance with 4 cores + 50 Gb mem + 100 Gb disk:
@@ -75,10 +75,17 @@ The visualization report can be ran in parallel, for example on an instance with
 git clone https://github.com/jmonlong/pangenome-evaluation
 cd pangenome-evaluation
 
-snakemake --use-singularity --configfile snakemake_config.yaml --config viz_html_out=visualization-report-hpp.html --cores 4 viz --forcerun viz
+snakemake --use-singularity --configfile snakemake_config.yaml --cores 4 viz --forcerun viz
 ```
 
 ## Experimenting with a subset of pangenomes and avoiding conflicts
 
 One could copy the config file and use different output paths.
-For example, if it's about exploring cactus parameters, using a `snakemake_config_cactus.yaml` and making `evaluation-report-hpp-cactus.html`/`visualization-report-hpp-cactus.html` in the snakemake commands above.
+For example, if it's about exploring cactus parameters, using a [`snakemake_config_cactus.yaml`](snakemake_config_cactus.yaml) that defines their own HTML outputs:
+
+```yaml
+html_out: "evaluation-report-cactus.html"
+viz_html_out: "visualization-report-cactus.html"
+```
+
+Then just use this config in the snakemake commands `--configfile snakemake_config_cactus.yaml`

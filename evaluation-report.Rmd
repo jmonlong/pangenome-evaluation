@@ -329,6 +329,8 @@ if('maplr' %in% rownames(files.info)){
               perfect_align=round(sum(reads[perfect])/all, 4)) %>%
     arrange(desc(align_99perc)) %>% 
     datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
+} else {
+  cat('Not available\n')
 }
 ```
 
