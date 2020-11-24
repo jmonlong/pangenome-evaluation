@@ -9,7 +9,7 @@ SROOT=config['s3root']
 ## samples to use, based on the 'dataset' label
 SAMPS = ""
 if 'dataset' not in config:
-    config['dataset'] = 'lc2019_12ont'
+    config['dataset'] = 'hpp60'
 if config['dataset'] == 'lc2019_12ont':
     SAMPS = 'CHM13 GM24143 GM24149 GM24385 HG00733 HG01109 HG01243 HG02055 HG02080 HG02723 HG03098 HG03492'.split()
 if config['dataset'] == 'lc2019_4ont':
