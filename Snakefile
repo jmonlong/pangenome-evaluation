@@ -200,7 +200,7 @@ rule bgzip_vcf:
     run:
         ## check if empty VCF
         empty_vcf = True
-        with open(input) as invcf:
+        with open(input, 'r') as invcf:
             while line in invcf:
                 if line[0] != '#':
                     empty_vcf = False
