@@ -200,19 +200,20 @@ rule bgzip_vcf:
     run:
         ## check if empty VCF
         empty_vcf = True
-        with open(input, 'r') as invcf:
-            while line in invcf:
+        with open(input[0], 'r') as invcf:
+            for line in invcf:
                 if line[0] != '#':
                     empty_vcf = False
                     break
         if empty_vcf:
             shell('bgzip -c {input} > {output.bgz}')
+            shell('touch {output.bgz.tbi}')
         else:
             shell('head -10000 {input} | grep "^#" >> {params.temp_vcf}')
             shell('grep -v "^#" {input} | sort -k1,1d -k2,2n >> {params.temp_vcf}')
             shell('bgzip -c {params.temp_vcf} > {output.bgz}')
             shell('rm {params.temp_vcf}')
-        shell('tabix {output.bgz}')
+            shell('tabix {output.bgz}')
 
 rule rename_contigs_ref:
     input: S3.remote(SROOT + '/hg38_chr20.fa')
