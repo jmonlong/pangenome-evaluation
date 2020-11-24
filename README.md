@@ -1,6 +1,6 @@
 # Pangenome evaluation
 
-**Experimental and in development.***
+**Experimental and in development.**
 
 ## Docker container
 
