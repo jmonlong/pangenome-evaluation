@@ -56,7 +56,7 @@ To compute the evaluation stats for one graph, start an instance with e.g. 8 cor
 git clone https://github.com/jmonlong/pangenome-evaluation
 cd pangenome-evaluation
 
-snakemake --configfile snakemake_config.yaml --config exp=cactus/new-cactus-parameters html_out=evaluation-report-temp.html --cores 8 eval_srmap --forcerun eval_srmap
+snakemake --use-singularity --configfile snakemake_config.yaml --config exp=cactus/new-cactus-parameters html_out=evaluation-report-temp.html --cores 8 eval_srmap --forcerun eval_srmap
 ```
 
 Once all the pangenomes are created, update the `dataset`/`exp` in `snakemake_config.yaml` to make sure they list the ones to include in the report.
@@ -66,7 +66,7 @@ Then, to gather the stats and make the evaluation report, launch a small instanc
 git clone https://github.com/jmonlong/pangenome-evaluation
 cd pangenome-evaluation
 
-snakemake --configfile snakemake_config.yaml --config html_out=evaluation-report-hpp.html --cores 1 eval_srmap --forcerun eval_srmap
+snakemake --use-singularity --configfile snakemake_config.yaml --config html_out=evaluation-report-hpp.html --cores 1 eval_srmap --forcerun eval_srmap
 ```
 
 The visualization report can be ran in parallel, for example on an instance with 4 cores + 50 Gb mem + 100 Gb disk:
@@ -75,7 +75,7 @@ The visualization report can be ran in parallel, for example on an instance with
 git clone https://github.com/jmonlong/pangenome-evaluation
 cd pangenome-evaluation
 
-snakemake --configfile snakemake_config.yaml --config viz_html_out=visualization-report-hpp.html --cores 4 viz --forcerun viz
+snakemake --use-singularity --configfile snakemake_config.yaml --config viz_html_out=visualization-report-hpp.html --cores 4 viz --forcerun viz
 ```
 
 ## Experimenting with a subset of pangenomes and avoiding conflicts

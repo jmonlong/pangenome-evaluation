@@ -334,32 +334,32 @@ if('maplr' %in% rownames(files.info)){
 
 *No MAPQ curve for now because all reads tend to map with maximum MAPQ of 255.*
 
-## Resources
+<!-- ## Resources -->
 
-Resources used to construct the pangenome, make (vg) indexes and map short reads.
+<!-- Resources used to construct the pangenome, make (vg) indexes and map short reads. -->
 
-```{r resources}
-bench.files = tibble(file=list.files('benchmarks/', '.tsv')) %>%
-  mutate(dataset=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\1', file),
-         method=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\2', file),
-         params=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\3', file),
-         step=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\4', file),
-         exp=paste0(method, '.', params)) %>%
-  filter(make.names(exp) %in% colnames(files.info) | method %in% c('minimap2', 'fpa'))
+<!-- ```{r resources} -->
+<!-- bench.files = tibble(file=list.files('benchmarks/', '.tsv')) %>% -->
+<!--   mutate(dataset=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\1', file), -->
+<!--          method=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\2', file), -->
+<!--          params=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\3', file), -->
+<!--          step=gsub('([^\\.]+)\\.([^\\.]+).([^\\.]+).([^\\.]+).benchmark.tsv', '\\4', file), -->
+<!--          exp=paste0(method, '.', params)) %>% -->
+<!--   filter(make.names(exp) %in% colnames(files.info) | method %in% c('minimap2', 'fpa')) -->
 
-bm.df = lapply(bench.files$file, function(ff){
-    read.table(paste0('benchmarks/', ff), as.is=TRUE, header=TRUE) %>%
-      mutate(file=ff)
-}) %>% bind_rows
+<!-- bm.df = lapply(bench.files$file, function(ff){ -->
+<!--     read.table(paste0('benchmarks/', ff), as.is=TRUE, header=TRUE) %>% -->
+<!--       mutate(file=ff) -->
+<!-- }) %>% bind_rows -->
 
-bm.df = bm.df %>% merge(bench.files)
+<!-- bm.df = bm.df %>% merge(bench.files) -->
 
-## map.info = tibble(exp=colnames(files.info),
-##                   map=gsub('.*\\.(.*)\\.stats.txt', '\\1', files.info['map',]))
+<!-- ## map.info = tibble(exp=colnames(files.info), -->
+<!-- ##                   map=gsub('.*\\.(.*)\\.stats.txt', '\\1', files.info['map',])) -->
 
-bm.df %>% filter(make.names(exp) %in% colnames(files.info)) %>%
-  mutate(core.h=round((mean_load/100)*s/3600, 2), exp=factor(exp), step=factor(step)) %>% 
-  dplyr::select(step, exp, max_rss, core.h, h.m.s, mean_load) %>%
-  arrange(step, exp) %>%
-  datatable(filter='top', options=list(pageLength=10))
-```
+<!-- bm.df %>% filter(make.names(exp) %in% colnames(files.info)) %>% -->
+<!--   mutate(core.h=round((mean_load/100)*s/3600, 2), exp=factor(exp), step=factor(step)) %>%  -->
+<!--   dplyr::select(step, exp, max_rss, core.h, h.m.s, mean_load) %>% -->
+<!--   arrange(step, exp) %>% -->
+<!--   datatable(filter='top', options=list(pageLength=10)) -->
+<!-- ``` -->

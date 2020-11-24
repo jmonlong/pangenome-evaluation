@@ -696,6 +696,14 @@ rule deconstruct_vcf:
     shell:
         "vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P chr20 {input.xg} > {output} 2> {log}"
 
+## Deconstruct variants relative to the reference path
+rule splitalts_deconstructed_vcf:
+    input: S3.remote(SROOT + '/{exp}.decon.vcf.bgz')
+    output: '{exp}.decon.altsplit.vcf'
+    threads: 1
+    shell:
+        "bcftools norm -m - {input} > {output}"
+    
 rule dist_stats:
     input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
     output: '{method}/{params}/{dataset}.{method}.{params}.dist-stats.tsv'
