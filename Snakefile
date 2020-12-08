@@ -795,7 +795,7 @@ rule odgi_viz:
 #         """
 
 rule real_reads_hg002:
-    input: S3.remote(SROOT + '/reads/glennhickey_outstore_GIAB-FEB26_HG002_{chr}.gam')
+    input: S3.remote('s3://glennhickey/outstore/GIAB-FEB26/map-HG002/HG002_{chr}.gam')
     output: S3.remote(SROOT + '/reads/HG002-glenn_giabfeb26.chr{chr}.interleaved.fastq.gz')
     shell:
         """
