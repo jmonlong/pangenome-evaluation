@@ -17,6 +17,11 @@ if config['dataset'] == 'lc2019_4ont':
 if config['dataset'] == 'hpp60':
     SAMPS = 'HG00436 HG00437 HG00619 HG00620 HG00671 HG00672 HG00734 HG00739 HG00740 HG01047 HG01069 HG01070 HG01104 HG01105 HG01121 HG01122 HG01173 HG01174 HG01356 HG01357 HG01889 HG01890 HG01926 HG01927 HG01950 HG01951 HG01976 HG01977 HG02146 HG02147 HG02255 HG02256 HG02484 HG02485 HG02557 HG02558 HG02570 HG02571 HG02620 HG02621 HG02628 HG02629 HG02715 HG02716 HG02884 HG02885 HG03451 HG03452 HG03514 HG03515 HG03538 HG03539 HG03577 HG03578 HG01256 HG01257 HG01359 HG01360 HG003 HG004 CHM13'.split()
 
+## chromosome currently analyzed
+CHR = 'chr2'
+if 'chr' in config:
+    CHR = config['chr']
+
 ## reads
 READS=['HG002-glenn_giabfeb26']
 READS_LR=['HG002-SequelII-merged_15kb_20kb-pbmm2']
@@ -63,7 +68,7 @@ for ii in range(len(exp_s)):
 regs = pd.read_csv(config['viz_bed'], sep='\t', header=None)
 REGIONS = []
 for ii in range(len(regs)):
-    REGIONS.append('hg38_chr20-' + str(regs[1][ii]) + '-' + str(regs[2][ii]))
+    REGIONS.append('hg38_' + CHR + '-' + str(regs[1][ii]) + '-' + str(regs[2][ii]))
 
 ## if the input graph didn't follow the naming conventions, define "links" in this file
 ## CSV: s3 path, new s3 path (that follows naming conventions)
@@ -214,24 +219,24 @@ rule bgzip_vcf:
         shell('tabix -f {output.bgz}')
 
 rule rename_contigs_ref:
-    input: S3.remote(SROOT + '/hg38_chr20.fa')
-    output: S3.remote(SROOT + '/hg38_chr20.renamed.fa')
+    input: S3.remote(SROOT + '/hg38_' + CHR + '.fa')
+    output: S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa')
     shell:
         """
         sed 's/^>/>hg38_/' {input} > {output}
         """
 
 rule rename_contigs:
-    input: S3.remote(SROOT + '/{samp}_paf_chr20.fa')
-    output: S3.remote(SROOT + '/{samp}_paf_chr20.renamed.fa')
+    input: S3.remote(SROOT + '/{samp}_paf_' + CHR + '.fa')
+    output: S3.remote(SROOT + '/{samp}_paf_' + CHR + '.renamed.fa')
     shell:
         """
         sed 's/^>/>{wildcards.samp}_/' {input} > {output}
         """
 
 rule rename_contigs_datasets:
-    input: S3.remote(SROOT + '/{dataset}_fasta/{samp}-chr20.fa.gz')
-    output: S3.remote(SROOT + '/{dataset}_fasta/{samp}-chr20.renamed.fa.gz')
+    input: S3.remote(SROOT + '/{dataset}_fasta/{samp}-' + CHR + '.fa.gz')
+    output: S3.remote(SROOT + '/{dataset}_fasta/{samp}-' + CHR + '.renamed.fa.gz')
     shell:
         """
         zcat {input} | sed 's/^>/>{wildcards.samp}_/' | gzip > {output}
@@ -242,8 +247,8 @@ rule rename_contigs_datasets:
 ##
 
 rule merge_fasta_dataset:
-    input: ref=S3.remote(SROOT + '/hg38_chr20.renamed.fa'),
-           amb=S3.remote(expand(SROOT + '/{{dataset}}_fasta/{samp}-chr20.renamed.fa.gz', samp=SAMPS))
+    input: ref=S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa'),
+           amb=S3.remote(expand(SROOT + '/{{dataset}}_fasta/{samp}-' + CHR + '.renamed.fa.gz', samp=SAMPS))
     output: '{dataset}-hg38.fa'
     shell:
         """
@@ -253,8 +258,8 @@ rule merge_fasta_dataset:
     
 
 rule merge_fasta:
-    input: S3.remote(SROOT + '/hg38_chr20.renamed.fa'),
-           S3.remote(expand(SROOT + '/{samp}_paf_chr20.renamed.fa', samp=SAMPS))
+    input: S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa'),
+           S3.remote(expand(SROOT + '/{samp}_paf_' + CHR + '.renamed.fa', samp=SAMPS))
     output: expand('{dataset}.fa', dataset=DATASET)
     shell:
         'cat {input} > {output}'
@@ -449,8 +454,8 @@ rule gfa_to_vg_seqwish:
 ##
 
 rule minigraph_ont_dataset:
-    input: S3.remote(SROOT + '/hg38_chr20.renamed.fa'),
-           S3.remote(expand(SROOT + '/{{dataset}}_fasta/{samp}-chr20.renamed.fa.gz', samp=SAMPS))
+    input: S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa'),
+           S3.remote(expand(SROOT + '/{{dataset}}_fasta/{samp}-' + CHR + '.renamed.fa.gz', samp=SAMPS))
     output: 'minigraph/L50-l50k/{dataset}-hg38.minigraph.L50-l50k.gfa'
     threads: 16
     benchmark: 'benchmarks/{dataset}-hg38.minigraph.L50-l50k.minigraph.benchmark.tsv'
@@ -461,8 +466,8 @@ rule minigraph_ont_dataset:
         """
 
 rule minigraph_ont:
-    input: S3.remote(SROOT + '/hg38_chr20.renamed.fa'),
-           S3.remote(expand(SROOT + '/{samp}_paf_chr20.renamed.fa', samp=SAMPS))
+    input: S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa'),
+           S3.remote(expand(SROOT + '/{samp}_paf_' + CHR + '.renamed.fa', samp=SAMPS))
     output: 'minigraph/L50-l50k/' + DATASET +  '.minigraph.L50-l50k.gfa'
     threads: 16
     benchmark: 'benchmarks/' + DATASET + '.minigraph.L50-l50k.minigraph.benchmark.tsv'
@@ -475,13 +480,13 @@ rule minigraph_ont:
 ## for minigraph we also need to convert the segment names to numeric (e.g. s1 -> 1)
 rule gfa_to_vg_minigraph:
     input:
-        py=S3.remote(SROOT + '/updateMinigraphGfa.py'),
+        py='updateMinigraphGfa.py',
         gfa=S3.remote(SROOT + '/minigraph/{params}/{dataset}.minigraph.{params}.gfa.gz')
     output: S3.remote(SROOT + '/minigraph/{params}/{dataset}.minigraph.{params}.vg')
     threads: 4
     benchmark: 'benchmarks/{dataset}.minigraph.{params}.gfa-to-vg.benchmark.tsv'
     shell:
-        "zcat {input.gfa} | python3 {input.py} -r hg38_chr20 | vg view -v -F - | vg mod --chop 32 - > {output}"
+        "zcat {input.gfa} | python3 {input.py} -r hg38_' + CHR + ' | vg view -v -F - | vg mod --chop 32 - > {output}"
 
 ##
 ## Pangenome construction through VCF files using paftools
@@ -489,8 +494,8 @@ rule gfa_to_vg_minigraph:
 
 rule minimap2_ref_samp_dataset:
     input:
-        ref=S3.remote(SROOT + '/hg38_chr20.renamed.fa'),
-        amb=S3.remote(SROOT + '/{dataset}_fasta/{samp}-chr20.renamed.fa.gz')
+        ref=S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa'),
+        amb=S3.remote(SROOT + '/{dataset}_fasta/{samp}-' + CHR + '.renamed.fa.gz')
     output: 'paf/{dataset}-hg38.{samp}.asm{asmX,\d+}.paf'
     threads: 2
     benchmark: 'benchmarks/{dataset}-hg38.minimap2.{samp}_asm{asmX}.minimap2.benchmark.tsv'
@@ -500,8 +505,8 @@ rule minimap2_ref_samp_dataset:
 
 rule minimap2_ref_samp:
     input:
-        ref=S3.remote(SROOT + '/hg38_chr20.renamed.fa'),
-        amb=S3.remote(SROOT + '/{samp}_paf_chr20.renamed.fa')
+        ref=S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa'),
+        amb=S3.remote(SROOT + '/{samp}_paf_' + CHR + '.renamed.fa')
     output: 'paf/{dataset}.{samp}.asm{asmX,\d+}.paf'
     threads: 16
     benchmark: 'benchmarks/{dataset}.minimap2.{samp}_asm{asmX}.minimap2.benchmark.tsv'
@@ -512,7 +517,7 @@ rule minimap2_ref_samp:
 rule paftools_vcf:
     input:
         paf=S3.remote(SROOT + '/paf/{dataset}.{samp}.asm{asmX}.paf.gz'),
-        ref=S3.remote(SROOT + '/hg38_chr20.renamed.fa')
+        ref=S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa')
     output: 'paftools/asm{asmX}-L10k-l1k/{dataset}.paftools.asm{asmX}-L10k-l1k.{samp}.vcf'
     wildcard_constraints:
         asmX="\d+"
@@ -541,7 +546,7 @@ rule add_ids_vcf:
 rule merge_vcf_svanalyzer:
     input:
         vcf=expand('paftools/{{params}}/{{dataset}}.paftools.{{params}}.{samp}.ids.vcf', samp=SAMPS),
-        ref=S3.remote(SROOT + '/hg38_chr20.renamed.fa')
+        ref=S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa')
     output: 'paftools/{params}-svanalyzer/{dataset}.paftools.{params}-svanalyzer.vcf'
     benchmark: 'benchmarks/{dataset}.paftools.{params}-svanalyzer.merge_vcfs.benchmark.tsv'
     log: 'logs/{dataset}.paftools.{params}-svanalyzer.merge_vcfs.log'
@@ -575,7 +580,7 @@ rule merge_vcf_rol:
 
 rule vg_construct_vcf:
     input:
-        ref=S3.remote(SROOT + '/hg38_chr20.renamed.fa'),
+        ref=S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa'),
         vcf=S3.remote(SROOT + '/paftools/{params}/{dataset}.paftools.{params}.vcf.bgz'),
         vcf_tbi=S3.remote(SROOT + '/paftools/{params}/{dataset}.paftools.{params}.vcf.bgz.tbi')
     output: S3.remote(SROOT + '/paftools/{params}/{dataset}.paftools.{params}.vg')
@@ -590,7 +595,7 @@ rule vg_construct_vcf:
 ##
 
 rule linear:
-    input: S3.remote(SROOT + '/hg38_chr20.renamed.fa')
+    input: S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa')
     output: S3.remote(SROOT + '/vg/linear/{dataset}.vg.linear.vg')
     shell:
         'vg construct -r {input} > {output}'
@@ -664,7 +669,7 @@ rule map_stats:
 
 rule deconstruct_vcf_minigraph:
     input:
-        py=S3.remote(SROOT + '/gamToGFApath.py'),
+        py='gamToGFApath.py',
         vg=S3.remote(SROOT + '/minigraph/{params}/{dataset}.minigraph.{params}.vg'),
         xg=S3.remote(SROOT + '/minigraph/{params}/map/{dataset}.minigraph.{params}.xg'),
         snarls=S3.remote(SROOT + '/minigraph/{params}/map/{dataset}.minigraph.{params}.snarls'),
@@ -681,7 +686,7 @@ rule deconstruct_vcf_minigraph:
         vg view -g {input.vg} > {params.gfa}
         vg paths -X -x {input.xg} -g {input.gbwt} | vg view -a - | python3 {input.py} >> {params.gfa}
         vg convert -ga {params.gfa} > {params.vgaug}
-        vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P chr20 {params.vgaug} > {output} 2> {log}
+        vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P {CHR} {params.vgaug} > {output} 2> {log}
         """
 
 rule deconstruct_vcf_paftools:
@@ -700,7 +705,7 @@ rule deconstruct_vcf:
     log: 'logs/{dataset}.{method}.{params}.deconstruct.log'
     threads: 16
     shell:
-        "vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P chr20 {input.xg} > {output} 2> {log}"
+        "vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P {CHR} {input.xg} > {output} 2> {log}"
 
 ## Deconstruct variants relative to the reference path
 rule splitalts_deconstructed_vcf:
@@ -727,9 +732,9 @@ rule extract_region_dot:
         #     CHR=wildcards.path.replace('_','.')
         # else:
         #     CHR=wildcards.path
-        CHR = shell('vg paths -L -x {input} | grep -e hg38 -e "^chr20"', iterable=True)
-        CHR = next(CHR)
-        shell('vg find -x {input} -c {wildcards.context} -p {CHR}:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg paths -r -Q {CHR} -v - | vg view -dup - > {output}')
+        CHRR = shell('vg paths -L -x {input} | grep -e hg38 -e "^' + CHR + '"', iterable=True)
+        CHRR = next(CHRR)
+        shell('vg find -x {input} -c {wildcards.context} -p {CHRR}:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg paths -r -Q {CHRR} -v - | vg view -dup - > {output}')
 
 rule extract_region_gfa:
     input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
@@ -739,9 +744,9 @@ rule extract_region_gfa:
         #     CHR=wildcards.path.replace('_','.')
         # else:
         #     CHR=wildcards.path
-        CHR = shell('vg paths -L -x {input} | grep -e hg38 -e "^chr20"', iterable=True)
-        CHR = next(CHR)
-        shell('vg find -x {input} -c {wildcards.context} -p {CHR}:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg view -g - > {output}')
+        CHRR = shell('vg paths -L -x {input} | grep -e hg38 -e "^' + CHR + '"', iterable=True)
+        CHRR = next(CHRR)
+        shell('vg find -x {input} -c {wildcards.context} -p {CHRR}:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg view -g - > {output}')
 
 rule dot_to_png:
     input: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.dot')
@@ -782,16 +787,16 @@ rule odgi_viz:
 #         xg=S3.remote('s3://vg-k8s/users/jmonlong/giab6-v1.22/hs37d5-giab6.xg'),
 #         gam=S3.remote('s3://vg-k8s/users/jmonlong/giab6-v1.22/HG002/HG002-hs37d5-giab6.map.sorted.gam'),
 #         gai=S3.remote('s3://vg-k8s/users/jmonlong/giab6-v1.22/HG002/HG002-hs37d5-giab6.map.sorted.gam.gai')
-#     output: S3.remote(SROOT + '/reads/HG002-sv_giab6.chr20.fastq.gz')
+#     output: S3.remote(SROOT + '/reads/HG002-sv_giab6.' + CHR + '.fastq.gz')
 #     shell:
 #         """
-#         vg chunk -C -p chr20 -x {input.xg} -a {input.gam} -b chunk
-#         mv chunk_chr20.gam {output}
+#         vg chunk -C -p ' + CHR + ' -x {input.xg} -a {input.gam} -b chunk
+#         mv chunk_' + CHR + '.gam {output}
 #         """
 
 rule real_reads_hg002:
-    input: S3.remote(SROOT + '/reads/glennhickey_outstore_GIAB-FEB26_HG002_20.gam')
-    output: S3.remote(SROOT + '/reads/HG002-glenn_giabfeb26.chr20.interleaved.fastq.gz')
+    input: S3.remote(SROOT + '/reads/glennhickey_outstore_GIAB-FEB26_HG002_{chr}.gam')
+    output: S3.remote(SROOT + '/reads/HG002-glenn_giabfeb26.chr{chr}.interleaved.fastq.gz')
     shell:
         """
         vg view -aX {input} | awk 'BEGIN{{delete ar; OFS="\\t"}}{{if(length(ar)==4){{print ar[1],ar[2],ar[3],ar[4]; delete ar}}; ar[length(ar)+1]=$0}}' | sort | awk '{{gsub("\\t","\\n", $0); print $0}}' | seqtk dropse | gzip > {output}
@@ -811,10 +816,10 @@ rule real_reads_hg002_ccs:
     input: 
         bam = 'reads/HG002.SequelII.merged_15kb_20kb.pbmm2.GRCh38.haplotag.10x.bam',
         bai = 'reads/HG002.SequelII.merged_15kb_20kb.pbmm2.GRCh38.haplotag.10x.bam.bai',
-    output: S3.remote(SROOT + '/reads/HG002-SequelII-merged_15kb_20kb-pbmm2.chr20.fastq.gz')
+    output: S3.remote(SROOT + '/reads/HG002-SequelII-merged_15kb_20kb-pbmm2.{chr}.fastq.gz')
     shell:
         """
-        samtools view -h {input.bam} chr20 | samtools fastq - | gzip > {output}
+        samtools view -h {input.bam} {wildcards.chr} | samtools fastq - | gzip > {output}
         """
 
 
@@ -916,7 +921,7 @@ rule index_gcsa:
 # map reads to the graph using giraffe
 rule map_giraffe:
     input:
-        fastq=S3.remote(SROOT + '/reads/{read}.chr20.interleaved.fastq.gz'),
+        fastq=S3.remote(SROOT + '/reads/{read}.' + CHR + '.interleaved.fastq.gz'),
         xg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg'),
         min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.N{n}.min'),
         dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
@@ -930,7 +935,7 @@ rule map_giraffe:
 
 rule map_giraffe_paths:
     input:
-        fastq=S3.remote(SROOT + '/reads/{read}.chr20.interleaved.fastq.gz'),
+        fastq=S3.remote(SROOT + '/reads/{read}.' + CHR + '.interleaved.fastq.gz'),
         xg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg'),
         min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.paths.min'),
         dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
@@ -945,7 +950,7 @@ rule map_giraffe_paths:
 # map reads to the graph using map
 rule map_vgmap:
     input:
-        fastq=S3.remote(SROOT + '/reads/{read}.chr20.interleaved.fastq.gz'),
+        fastq=S3.remote(SROOT + '/reads/{read}.' + CHR + '.interleaved.fastq.gz'),
         xg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg'),
         gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa'),
         gcsa_lcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa.lcp')
@@ -982,9 +987,9 @@ rule call_novcf:
     benchmark: 'benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-call-{read}.benchmark.tsv'
     log: 'logs/{dataset}.{method}.{params}.mapvg-{mapper}-call-{read}.log'
     run:
-        CHR = shell('vg paths -L -x {input.xg} | grep -e hg38 -e "^chr20"', iterable=True)
-        CHR = next(CHR)
-        shell('vg call -k {input.pack} -t {threads} -s HG002 --snarls {input.snarls} -p {CHR} {input.xg} > {output} 2> {log}')
+        CHRR = shell('vg paths -L -x {input.xg} | grep -e hg38 -e "^' + CHR + '"', iterable=True)
+        CHRR = next(CHRR)
+        shell('vg call -k {input.pack} -t {threads} -s HG002 --snarls {input.snarls} -p {CHRR} {input.xg} > {output} 2> {log}')
 
 ##
 ## Map reads using GraphAligner
@@ -992,7 +997,7 @@ rule call_novcf:
 
 rule map_graphaligner:
     input:
-        fastq=S3.remote(SROOT + '/reads/{read}.chr20.fastq.gz'),
+        fastq=S3.remote(SROOT + '/reads/{read}.' + CHR + '.fastq.gz'),
         vg=S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vg')
     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
     threads: config['map_cores']
@@ -1009,7 +1014,7 @@ rule map_graphaligner:
 
 # rule map_graphaligner:
 #     input:
-#         fastq=S3.remote(SROOT + '/reads/{read}.chr20.fastq.gz'),
+#         fastq=S3.remote(SROOT + '/reads/{read}.' + CHR + '.fastq.gz'),
 #         vg=S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vg')
 #     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
 #     threads: config['map_cores']

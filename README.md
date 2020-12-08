@@ -35,6 +35,12 @@ When the snakemake pipeline can't find a pangenome, it will look at this file (a
 
 TL;DR Add a line to `input.graphs.s3.links.csv` with `CURRENT_PATH,CORRECT_PATH`
 
+## Chromosome
+
+To increase turn around time, we do the analysis on one chromosome. 
+We started with `chr20` which is the default.
+To use a different chromosome, change the [config file](snakemake_config.yaml) or add `chr=chr2` in the `--config` part of the command line.
+
 ## Snakemake pipeline
 
 The snakemake pipeline currently implements both the pangenome evaluation and some pangenome construction (minigraph, seqwish/smoothxg, VCF approach).

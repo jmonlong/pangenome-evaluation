@@ -1,5 +1,6 @@
 ## dataset
 dataset: "hpp60"
+chr: "chr20"
 ## experiments
 exp: "vg/linear cactus/minimap2-star-no-secondary-2020-09-04-glenn-debug cactus/minigraph-2020-10-28-u1-dna-brnn cactus/minigraph-2020-10-28-dna-brnn-nu1-b100k-q5-s500-caf cactus/minigraph-2020-10-28-dna-brnn-nu1-b100k-q5-s1000-caf cactus/minimap-poa minigraph/L50-l50k paftools/asm20-L10k-l1k"
 ## s3 root bucket
