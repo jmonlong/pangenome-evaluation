@@ -40,6 +40,7 @@ TL;DR Add a line to `input.graphs.s3.links.csv` with `CURRENT_PATH,CORRECT_PATH`
 To increase turn around time, we do the analysis on one chromosome. 
 We started with `chr20` which is the default.
 To use a different chromosome, change the [config file](snakemake_config.yaml) or add `chr=chr2` in the `--config` part of the command line.
+The `s3root` parameter might be relevant too, to specify the S3 bucket to use as root (might be different if testing a different chromosome).
 
 ## Snakemake pipeline
 
