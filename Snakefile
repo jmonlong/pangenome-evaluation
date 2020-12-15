@@ -178,6 +178,12 @@ rule gzip:
     shell:
         'pigz -c -p {threads} {input} > {output}'
 
+rule bgzip_fa:
+    input: '{file}.fa'
+    output: S3.remote(SROOT + '/{file}.fa.gz')
+    shell:
+        'bgzip -c {input} > {output}'
+
 # rule bgzip:
 #     input: '{file}'
 #     output: S3.remote(SROOT + '/{file}.bgz')
@@ -439,7 +445,7 @@ rule gfa_to_vg_seqwish:
 ## Pangenome construction using minigraph
 ##
 
-rule minigraph_ont:
+rule minigraph:
     input: S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa.gz'),
            S3.remote(expand(SROOT + '/{{dataset}}_fasta/{samp}-' + CHR + '.renamed.fa.gz', samp=SAMPS))
     output: 'minigraph/L50-l50k/{dataset}-hg38.minigraph.L50-l50k.gfa'
@@ -511,7 +517,7 @@ rule add_ids_vcf:
 rule merge_vcf_svanalyzer:
     input:
         vcf=expand('paftools/{{params}}/{{dataset}}.paftools.{{params}}.{samp}.ids.vcf', samp=SAMPS),
-        ref=S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa')
+        ref=S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa.gz')
     output: 'paftools/{params}-svanalyzer/{dataset}.paftools.{params}-svanalyzer.vcf'
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.paftools.{params}-svanalyzer.merge_vcfs.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.paftools.{params}-svanalyzer.merge_vcfs.log')
@@ -554,8 +560,14 @@ rule vg_construct_vcf:
     log: S3.remote(SROOT + '/logs/{dataset}.paftools.{params}.vg_construct.log')
     singularity:
         "docker://quay.io/vgteam/vg:v1.29.0"
+    params:
+        ref='hg38_' + CHR + '.renamed.fa'
     shell:
-        "vg construct -r {input.ref} -v {input.vcf} -a -S -t {threads} -p > {output} 2> {log}"
+        """
+        gunzip -c {input.ref} > {params.ref}
+        vg construct -r {params.ref} -v {input.vcf} -a -S -t {threads} -p > {output} 2> {log}
+        rm {params.ref}
+        """
 
 ##
 ## Linear genome
@@ -564,10 +576,16 @@ rule vg_construct_vcf:
 rule linear:
     input: S3.remote(SROOT + '/hg38_' + CHR + '.renamed.fa.gz')
     output: S3.remote(SROOT + '/vg/linear/{dataset}.vg.linear.vg')
+    params:
+        ref='hg38_' + CHR + '.renamed.fa'
     singularity:
         "docker://quay.io/vgteam/vg:v1.29.0"
     shell:
-        'vg construct -r {input} > {output}'
+        """
+        gunzip -c {input} > {params.ref}
+        vg construct -r {params.ref} > {output}
+        rm {params.ref}
+        """
 
 ##
 ## pangenome stats
@@ -1053,6 +1071,7 @@ rule map_graphaligner:
 #         """
 
 # Preference to specific rules if multiple could be used
+ruleorder: bgzip_fa > gzip
 ruleorder: gfa_to_vg_seqwish > gfa_to_vg_minigraph > gfa_to_vg
 ruleorder: seqwish_kl_gz > seqwish_kl
 ruleorder: deconstruct_vcf_minigraph > deconstruct_vcf
