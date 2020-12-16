@@ -6,6 +6,10 @@ S3 = S3RemoteProvider()
 ## S3 root bucket
 SROOT=config['s3root']
 
+## vg docker container
+if 'vg_docker' not in config:
+    config['vg_docker'] = 'quay.io/vgteam/vg:v1.29.0'
+
 ## samples to use, based on the 'dataset' label
 SAMPS = ""
 if 'dataset' not in config:
@@ -437,7 +441,7 @@ rule gfa_to_vg_seqwish:
     threads: 4
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.seqwish.{params}.gfa-to-vg.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'zcat {input} | vg convert -ga - | vg mod --unchop - | vg mod --chop 32 - > {output}'
 
@@ -466,9 +470,9 @@ rule gfa_to_vg_minigraph:
     threads: 4
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.minigraph.{params}.gfa-to-vg.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
-        "zcat {input.gfa} | python3 {input.py} -r hg38_' + CHR + ' | vg view -v -F - | vg mod --chop 32 - > {output}"
+        "zcat {input.gfa} | python3 {input.py} -r hg38_{CHR} | vg view -v -F - | vg mod --chop 32 - > {output}"
 
 ##
 ## Pangenome construction through VCF files using paftools
@@ -559,7 +563,7 @@ rule vg_construct_vcf:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.paftools.{params}.vg_construct.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.paftools.{params}.vg_construct.log')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     params:
         ref='hg38_' + CHR + '.renamed.fa'
     shell:
@@ -579,7 +583,7 @@ rule linear:
     params:
         ref='hg38_' + CHR + '.renamed.fa'
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         """
         gunzip -c {input} > {params.ref}
@@ -612,7 +616,7 @@ rule gfa_to_vg:
     threads: 4
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.gfa-to-vg.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'zcat {input} | vg convert -g -v - | vg mod --unchop - | vg mod --chop 32 - > {output}'
 
@@ -630,7 +634,7 @@ rule pg_to_vg:
     threads: 4
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.pg-to-vg.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg convert {input} | vg mod --chop 32 - > {output}'
 
@@ -639,7 +643,7 @@ rule vg_stats:
     output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats.txt')
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.vg-stats.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg stats -zl {input} > {output}'
 
@@ -648,7 +652,7 @@ rule vg_stats_degree:
     output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats-degree.tsv')
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.vg-stats-degree.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg stats -D {input} > {output}'
 
@@ -677,7 +681,7 @@ rule deconstruct_vcf_minigraph:
         gfa="temp_decon_{dataset}.minigraph.{params}.gfa",
         vgaug="temp_decon_{dataset}.minigraph.{params}.vg"
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         """
         vg view -g {input.vg} > {params.gfa}
@@ -702,7 +706,7 @@ rule deconstruct_vcf:
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.deconstruct.log')
     threads: 16
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         "vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P {CHR} {input.xg} > {output} 2> {log}"
 
@@ -718,7 +722,7 @@ rule dist_stats:
     input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
     output: '{method}/{params}/{dataset}.{method}.{params}.dist-stats.tsv'
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         """
         echo -e "node_count\tdepth\tmin_length\tmax_length" > {output}
@@ -729,7 +733,7 @@ rule extract_region_dot:
     input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
     output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.dot')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         """
         CHRP=`vg paths -L -x {input} | grep -e hg38 -e "^{CHR}" | head -1`
@@ -740,7 +744,7 @@ rule extract_region_gfa:
     input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
     output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.gfa')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         """
         CHRP=`vg paths -L -x {input} | grep -e hg38 -e "^{CHR}" | head -1`
@@ -833,7 +837,7 @@ rule index_xg:
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-xg.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg index -L -t {threads} -x {output} {input}'
 
@@ -846,7 +850,7 @@ rule index_gbwt_greedy:
     threads: 1
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-N{n}.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg gbwt -n {wildcards.n} -g {output.gg} -o {output.gbwt} -x {input} -P'
 
@@ -857,7 +861,7 @@ rule index_gbwt_paths:
     threads: 1
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-paths.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg index -T -G {output} {input}'
 
@@ -869,7 +873,7 @@ rule index_minimizer:
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-min-k{k}-w{w}-{n}.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg minimizer -k {wildcards.k} -w {wildcards.w} -t {threads} -i {output} -g {input.gbwt} {input.xg}'
 
@@ -879,7 +883,7 @@ rule index_trivial_snarls:
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-trivialsnarls.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg snarls -t {threads} --include-trivial -A integrated {input} > {output}'
 
@@ -889,7 +893,7 @@ rule index_snarls:
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-snarls.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg snarls -t {threads} -A integrated -m 1000 {input} > {output}'
 
@@ -901,7 +905,7 @@ rule index_distance:
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-dist.benchmark.tsv')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg index -t {threads} -j {output} -s {input.snarls} {input.vg}'
 
@@ -912,7 +916,7 @@ rule prune_vg:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-prune.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-prune.log')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg prune -t {threads} -M 32 --restore-paths {input} > {output} 2> {log}'
 
@@ -927,7 +931,7 @@ rule index_gcsa:
     params:
         tmp_dir="temp_gsca_{method}_{params}_{dataset}"
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         """
         mkdir -p {params.tmp_dir}
@@ -948,7 +952,7 @@ rule map_giraffe:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}N-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}N-{read}.log')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg giraffe -o gaf -p -t {threads} -b fast -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -i -f {input.fastq} > {output} 2> {log}'
 
@@ -964,7 +968,7 @@ rule map_giraffe_paths:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}wPaths-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}wPaths-{read}.log')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg giraffe -o gaf -p -t {threads} -b fast -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -i -f {input.fastq} > {output} 2> {log}'
 
@@ -980,7 +984,7 @@ rule map_vgmap:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-map-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-map-{read}.log')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         'vg map --gaf -t {threads} -x {input.xg} -g {input.gcsa} -i -f {input.fastq} -N {wildcards.read} > {output} 2> {log}'
 
@@ -994,7 +998,7 @@ rule pack_ga:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-ga-pack-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-ga-pack-{read}.log')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         "vg pack -x {input.xg} -a {input.gaf} -Q 0 -t {threads} -o {output} 2> {log}"
 
@@ -1008,7 +1012,7 @@ rule pack:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-pack-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-pack-{read}.log')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         "vg pack -x {input.xg} -a {input.gaf} -Q 5 -t {threads} -o {output} 2> {log}"
 
@@ -1023,7 +1027,7 @@ rule call_novcf:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-call-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-call-{read}.log')
     singularity:
-        "docker://quay.io/vgteam/vg:v1.29.0"
+        "docker://" + config['vg_docker']
     shell:
         """
         CHRP=`vg paths -L -x {input.xg} | grep -e hg38 -e "^{CHR}" | head -1`
