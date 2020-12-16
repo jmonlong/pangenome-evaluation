@@ -2,7 +2,7 @@
 dataset: "hpp60"
 chr: "chr2"
 ## experiments
-exp: "vg/linear minigraph/L50-l50k paftools/asm20-L10k-l1k"
+exp: "vg/linear minigraph/L50-l50k paftools/asm20-L10k-l1k cactus/minigraph-softmasked-hg38-overlapfix"
 ## s3 root bucket
 s3root: 'vg-k8s/vgamb/chr2'
 ## vg mapping
