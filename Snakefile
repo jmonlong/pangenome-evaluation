@@ -30,7 +30,7 @@ READS_LR=['HG002-SequelII-merged_15kb_20kb-pbmm2']
 ##  and {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
 ## Note: because some pangenomes use embedded paths and don't, we need this loop and
 ##       can't use 'expand' easily to deal with different {mapper} mode used on different pangenomes
-EMB_PATH_METHS = ['cactus', 'seqwish', 'linear']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
+EMB_PATH_METHS = ['cactus', 'seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
 EXPS = []  ## {method}/{params}/{dataset}.{method}.{params}
 EXPS_MAP = [] ## {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
 EXPS_MAP_LR = [] ## {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
