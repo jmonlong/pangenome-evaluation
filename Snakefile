@@ -950,7 +950,7 @@ rule map_giraffe:
     singularity:
         "docker://quay.io/vgteam/vg:v1.29.0"
     shell:
-        'vg giraffe -o gaf -p -t {threads} -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -i -f {input.fastq} > {output} 2> {log}'
+        'vg giraffe -o gaf -p -t {threads} -b fast -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -i -f {input.fastq} > {output} 2> {log}'
 
 rule map_giraffe_paths:
     input:
@@ -966,7 +966,7 @@ rule map_giraffe_paths:
     singularity:
         "docker://quay.io/vgteam/vg:v1.29.0"
     shell:
-        'vg giraffe -o gaf -p -t {threads} --rescue-algorithm gssw -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -i -f {input.fastq} > {output} 2> {log}'
+        'vg giraffe -o gaf -p -t {threads} -b fast -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -i -f {input.fastq} > {output} 2> {log}'
 
 # map reads to the graph using map
 rule map_vgmap:
