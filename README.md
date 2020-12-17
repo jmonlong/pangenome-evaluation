@@ -19,12 +19,28 @@ Add your pangenome in GFA/vg/pg format in `s3://vg-k8s/vgamb/chr20`, in a folder
 - For example, for a cactus graph: `cactus/{parameters}/hpp60-hg38.cactus.{parameters}.pg`
 - No `.` in `{parameters}`, use `-` or `_` instead!
 
-### Short-read mapping evaluation
+### Full evaluation
 
-Run:
+Rule `eval_all` so run:
+
+```
+snakemake --configfile snakemake_config.yaml --config exp=cactus/minigraph-2020-10-28-dna-brnn-nu1-b100k-q5-caf html_out=evaluation-report-srmap.html --cores 8 eval_all
+```
+
+### Short-read mapping evaluation only
+
+Rule `eval_srmap` so run:
 
 ```
 snakemake --configfile snakemake_config.yaml --config exp=cactus/minigraph-2020-10-28-dna-brnn-nu1-b100k-q5-caf html_out=evaluation-report-srmap.html --cores 8 eval_srmap
+```
+
+### Short-read mapping evaluation and basic graph stats
+
+Rule `eval_srmap_vgstats` so run:
+
+```
+snakemake --configfile snakemake_config.yaml --config exp=cactus/minigraph-2020-10-28-dna-brnn-nu1-b100k-q5-caf html_out=evaluation-report-srmap.html --cores 8 eval_srmap_vgstats
 ```
 
 ## I named my graph differently and it doesn't follow the naming convention defined above...
