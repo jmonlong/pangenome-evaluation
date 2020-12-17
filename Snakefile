@@ -463,16 +463,14 @@ rule minigraph:
 
 ## for minigraph we also need to convert the segment names to numeric (e.g. s1 -> 1)
 rule gfa_to_vg_minigraph:
-    input:
-        py='updateMinigraphGfa.py',
-        gfa=S3.remote(SROOT + '/minigraph/{params}/{dataset}.minigraph.{params}.gfa.gz')
+    input: S3.remote(SROOT + '/minigraph/{params}/{dataset}.minigraph.{params}.gfa.gz')
     output: S3.remote(SROOT + '/minigraph/{params}/{dataset}.minigraph.{params}.vg')
     threads: 4
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.minigraph.{params}.gfa-to-vg.benchmark.tsv')
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        "zcat {input.gfa} | python3 {input.py} -r hg38_{CHR} | vg view -v -F - | vg mod --chop 32 - > {output}"
+        "zcat {input} | python3 updateMinigraphGfa.py -r hg38_{CHR} | vg view -v -F - | vg mod --chop 32 - > {output}"
 
 ##
 ## Pangenome construction through VCF files using paftools

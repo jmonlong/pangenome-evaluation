@@ -50,6 +50,17 @@ Eventually, we should maybe split this into separate evaluation and construction
 ## Running on our kubernetes server
 
 Start an instance with the `jmonlong/job-vgamb:3` docker image.
+You also need to add the following in your kubernetes launching config to be able to use Singularity:
+
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+      - name: main
+        securityContext:
+          privileged: true
+```
 
 The instance needs some files for the snakemake pipeline: Snakefile, config, list of regions, etc
 Now that we have a github repo, we could use it to host these files.
