@@ -52,7 +52,9 @@ for ii in range(len(exp_s)):
         EXP_LABELS.append(exp)
     ## Made from 'exp' config that contains {method}/{params}, and the DATASET value computed above
     EXPS.append(exp + '/' + DATASET + '.' + exp.replace('/', '.'))
-    EXPS_SUBGRAPHS.append(exp + '/subgraphs/' + DATASET + '.' + exp.replace('/', '.'))
+    if exp != 'vg/linear':
+        # no need to visualize the linear reference "graph"
+        EXPS_SUBGRAPHS.append(exp + '/subgraphs/' + DATASET + '.' + exp.replace('/', '.'))
     exp_meth = exp.split('/')[0]
     ## eventually match the MAPPER to pangenome ('auto' mode) or non-default mapping mode
     MAPPER=config['mapper']
