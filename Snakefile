@@ -72,7 +72,8 @@ for ii in range(len(exp_s)):
 regs = pd.read_csv(config['viz_bed'], sep='\t', header=None)
 REGIONS = []
 for ii in range(len(regs)):
-    REGIONS.append('hg38_' + CHR + '-' + str(regs[1][ii]) + '-' + str(regs[2][ii]))
+    if regs[0][ii] == CHR:
+        REGIONS.append('hg38_' + CHR + '-' + str(regs[1][ii]) + '-' + str(regs[2][ii]))
 
 ## if the input graph didn't follow the naming conventions, define "links" in this file
 ## CSV: s3 path, new s3 path (that follows naming conventions)
