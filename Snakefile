@@ -456,18 +456,18 @@ rule pggb:
         mv {input}.*.smooth.gfa {output}
         """
 
-rule gfa_to_vg_seqwish:
-    input: S3.remote(SROOT + '/seqwish/{params}/{dataset}.seqwish.{params}.gfa.gz')
-    output: S3.remote(SROOT + '/seqwish/{params}/{dataset}.seqwish.{params}.vg')
-    threads: 4
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.seqwish.{params}.gfa-to-vg.benchmark.tsv')
-    singularity:
-        "docker://" + config['vg_docker']
-    shell:
-        'zcat {input} | vg convert -ga - | vg mod --unchop - | vg mod --chop 32 - > {output}'
+# rule gfa_to_vg_seqwish:
+#     input: S3.remote(SROOT + '/seqwish/{params}/{dataset}.seqwish.{params}.gfa.gz')
+#     output: S3.remote(SROOT + '/seqwish/{params}/{dataset}.seqwish.{params}.vg')
+#     threads: 4
+#     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.seqwish.{params}.gfa-to-vg.benchmark.tsv')
+#     singularity:
+#         "docker://" + config['vg_docker']
+#     shell:
+#         'zcat {input} | vg convert -ga - | vg mod --unchop - | vg mod --chop 32 - > {output}'
 
 ##
-## Pangenome construction using minigraph
+## pangenome construction using minigraph
 ##
 
 rule minigraph:
@@ -637,7 +637,7 @@ rule gfa_to_vg:
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'zcat {input} | vg convert -g -v - | vg mod --unchop - | vg mod --chop 32 - > {output}'
+        'zcat {input} | vg convert -ga - | vg mod --unchop - | vg mod --chop 32 - > {output}'
 
 def pg_input(wildcards):
     in_path = '{method}/{params}/{dataset}.{method}.{params}.pg'.format(method=wildcards.method,
@@ -1095,7 +1095,7 @@ rule map_graphaligner:
 
 # Preference to specific rules if multiple could be used
 ruleorder: bgzip_fa > gzip
-ruleorder: gfa_to_vg_seqwish > gfa_to_vg_minigraph > gfa_to_vg
+ruleorder: gfa_to_vg_minigraph > gfa_to_vg
 ruleorder: seqwish_kl_gz > seqwish_kl
 ruleorder: deconstruct_vcf_minigraph > deconstruct_vcf
 ruleorder: deconstruct_vcf_paftools > bgzip_vcf
