@@ -767,7 +767,7 @@ rule extract_region_gfa:
     shell:
         """
         CHRP=`vg paths -L -x {input} | grep -e hg38 -e "^{CHR}" | head -1`
-        vg find -x {input} -c {wildcards.context} -p $CHRP:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg view -g - > {output}')
+        vg find -x {input} -c {wildcards.context} -p $CHRP:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg view -g - > {output}
         """
 
 rule dot_to_png:
