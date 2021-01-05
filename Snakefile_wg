@@ -424,14 +424,16 @@ rule index_gbwt_greedy:
 
 ## GBWT from the embedded paths in the pangenome
 rule index_gbwt_paths:
-    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
+    input:
+        vg=expand('{{method}}/{{params}}/{{dataset}}.{{method}}.{{params}}.{chr}.vg', chr=CHRS),
+        mapping='{method}/{params}/{dataset}.{method}.{params}.ids.mapping'
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.paths.gbwt')
     threads: 1
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-paths.benchmark.tsv')
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'vg index -T -G {output} -x {input}'
+        'vg index -T -G {output} {input.vg}'
 
 rule index_minimizer:
     input:
