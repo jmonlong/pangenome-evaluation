@@ -403,6 +403,7 @@ rule index_xg:
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-xg.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-xg.log')
     singularity:
         "docker://" + config['vg_docker']
     shell:
