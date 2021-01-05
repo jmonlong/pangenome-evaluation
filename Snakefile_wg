@@ -475,7 +475,7 @@ rule index_distance:
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'vg index -t {threads} -j {output} -s {input.snarls} -x {input.xg}'
+        'vg index -t {threads} -j {output} -s {input.snarls} {input.xg}'
 
 rule prune_vg:
     input: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vg')
