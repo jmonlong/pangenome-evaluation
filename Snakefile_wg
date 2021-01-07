@@ -381,7 +381,7 @@ rule cp_vg_cactus:
     input: S3.remote('s3://vg-k8s/vgamb/wg/cactus/GRCh38-freeze1/align-batch-dec31/{chr}.vg')
     output: 'cactus/dec31/GRCh38-freeze1.cactus.dec31.{chr}.vg'
     threads: 1
-    shell: 'cp {input} {output}'
+    shell: 'vg mod --chop 32 {input} > {output}'
 
 # join ids across the multiple .vg files.
 rule join_ids:
