@@ -159,10 +159,14 @@ rule gfa_to_vg:
     output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vg')
     threads: 4
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.gfa-to-vg.benchmark.tsv')
+    params: tmp_gfa="{dataset}.{method}.{params}.gfa"
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'zcat {input} | vg convert -ga - | vg mod --unchop - | vg mod --chop 32 - > {output}'
+        """
+        zcat {input} > {params.tmp_gfa}
+        vg convert -gp {params.tmp_gfa} | vg mod --unchop - | vg mod --chop 32 - > {output}
+        """
 
 def pg_input(wildcards):
     in_path = '{method}/{params}/{dataset}.{method}.{params}.pg'.format(method=wildcards.method,
