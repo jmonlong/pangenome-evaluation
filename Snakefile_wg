@@ -463,8 +463,19 @@ rule index_gbwt_paths:
 
 rule index_gbwt_chrs:
     input:
-        vg=expand('{{method}}/{{params}}/{{dataset}}.{{method}}.{{params}}.{chr}.vg', chr=CHRS),
+        vg='{method}/{params}/{dataset}.{method}.{params}.{chr}.vg',
         mapping='{method}/{params}/{dataset}.{method}.{params}.ids.mapping'
+    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.paths.{chr}.gbwt')
+    threads: 4
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-paths-{chr}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gbwt-paths-{chr}.log')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        'vg index -t {threads} -T -G {output} {input.vg} 2> {log}'
+
+rule merge_gbwt_chrs:
+    input: S3.remote(expand(SROOT + '/{{method}}/{{params}}/map/{{dataset}}.{{method}}.{{params}}.paths.{chr}.gbwt', chr=CHRS)),
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.paths.gbwt')
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-paths.benchmark.tsv')
@@ -472,7 +483,7 @@ rule index_gbwt_chrs:
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'vg index -t {threads} -T -G {output} {input.vg} 2> {log}'
+        'vg gbwt -t {threads} -o {output} -f {input} 2> {log}'
 
 
 rule index_minimizer:
