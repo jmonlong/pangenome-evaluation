@@ -399,10 +399,21 @@ rule join_ids:
     shell:
         'vg ids --join --mapping {output} {input} 2> {log}'
 
+rule rm_paths_vg:
+    input: vg='{method}/{params}/{dataset}.{method}.{params}.{chr}.vg',
+           mapping='{method}/{params}/{dataset}.{method}.{params}.ids.mapping'
+    output: '{method}/{params}/{dataset}.{method}.{params}.{chr}.nopaths.vg'
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-rmpath-{chr}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-rmpath-{chr}.log')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell: "vg paths -r -Q hg38 -v {input.vg} > {output}"
+
+
 # make xg index containing the alts paths
 rule index_xg_chrs:
     input:
-        vg=expand('{{method}}/{{params}}/{{dataset}}.{{method}}.{{params}}.{chr}.vg', chr=CHRS),
+        vg=expand('{{method}}/{{params}}/{{dataset}}.{{method}}.{{params}}.{chr}.nopaths.vg', chr=CHRS),
         mapping='{method}/{params}/{dataset}.{method}.{params}.ids.mapping'
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
     threads: 16
@@ -411,7 +422,7 @@ rule index_xg_chrs:
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'vg index -L -t {threads} -x {output} {input.vg} 2> {log}'
+        'vg index -t {threads} -x {output} {input.vg} 2> {log}'
 
 # make xg index containing the alts paths
 rule index_xg:
@@ -423,7 +434,7 @@ rule index_xg:
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'vg index -L -t {threads} -x {output} {input} 2> {log}'
+        'vg index -t {threads} -x {output} {input} 2> {log}'
 
 ## GBWT with greedy path cover
 rule index_gbwt_greedy:
@@ -438,9 +449,10 @@ rule index_gbwt_greedy:
     shell:
         'vg gbwt -n {wildcards.n} -g {output.gg} -o {output.gbwt} -x {input} -P'
 
+
 ## GBWT from the embedded paths in the pangenome
 rule index_gbwt_paths:
-    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
+    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.vg')
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.paths.gbwt')
     threads: 1
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-paths.benchmark.tsv')
@@ -448,6 +460,20 @@ rule index_gbwt_paths:
         "docker://" + config['vg_docker']
     shell:
         'vg index -T -G {output} {input}'
+
+rule index_gbwt_chrs:
+    input:
+        vg=expand('{{method}}/{{params}}/{{dataset}}.{{method}}.{{params}}.{chr}.vg', chr=CHRS),
+        mapping='{method}/{params}/{dataset}.{method}.{params}.ids.mapping'
+    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.paths.gbwt')
+    threads: 16
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-paths.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gbwt-paths.log')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        'vg index -t {threads} -T -G {output} {input.vg} 2> {log}'
+
 
 rule index_minimizer:
     input:
