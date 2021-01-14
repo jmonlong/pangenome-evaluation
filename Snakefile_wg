@@ -80,6 +80,20 @@ rule eval_srmap:
         cp evaluation-report.html {output}
         """
 
+rule eval_lrmap:
+    input:
+        rmd='evaluation-report.Rmd',
+        maplr=S3.remote(expand('{sroot}/{exp}.stats.txt', sroot=SROOT, exp=EXPS_MAP_LR))
+    output: S3.remote(SROOT + '/' + config['html_out'])
+    params: exps=EXP_LABELS
+    shell:
+        """
+        echo {params.exps} > files.info
+        echo maplr {input.maplr} >> files.info
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
+        cp evaluation-report.html {output}
+        """
+
 ##
 ## Misc
 ##
@@ -665,7 +679,7 @@ rule call_novcf:
 rule map_graphaligner:
     input:
         fastq=S3.remote(SROOT + '/reads/{read}.fastq.gz'),
-        vg=S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vg')
+        vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
     threads: config['map_cores']
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-{read}.benchmark.tsv')
@@ -703,3 +717,4 @@ ruleorder: bgzip_fa > gzip
 ruleorder: deconstruct_vcf_minigraph > deconstruct_vcf
 ruleorder: deconstruct_vcf_paftools > bgzip_vcf
 ruleorder: pack_ga > pack
+ruleorder: vg_linear > rm_paths_vg
