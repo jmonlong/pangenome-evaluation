@@ -16,7 +16,7 @@ CHRS += ['chrX']
 
 ## reads
 READS=['HG002_5M']
-READS_LR=['HG002-SequelII-merged_15kb_20kb-pbmm2']
+READS_LR=['HG002-SequelII-merged_15kb_20kb-pbmm2.ss001']
 
 ## List experiments (pangenomes) in the form {method}/{params}/{dataset}.{method}.{params}
 ##  and {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
