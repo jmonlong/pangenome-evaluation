@@ -693,6 +693,23 @@ rule map_graphaligner:
         rm -f {params.gfa}
         """
 
+rule map_graphaligner_gfa:
+    input:
+        fastq=S3.remote(SROOT + '/reads/{read}.fastq.gz'),
+        gfa=gfa_input
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
+    threads: config['map_cores']
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-{read}.log')
+    params:
+        gfa = 'temp.{dataset}.{method}.{params}.gfa'
+    shell:
+        """
+        zcat {input.gfa} > {params.gfa}
+        GraphAligner -g {params.gfa} -f {input.fastq} -a {output} -x vg -t {threads} 2> {log}
+        rm -f {params.gfa}
+        """
+
 # rule map_graphaligner:
 #     input:
 #         fastq=S3.remote(SROOT + '/reads/{read}.' + CHR + '.fastq.gz'),
@@ -718,3 +735,4 @@ ruleorder: deconstruct_vcf_minigraph > deconstruct_vcf
 ruleorder: deconstruct_vcf_paftools > bgzip_vcf
 ruleorder: pack_ga > pack
 ruleorder: vg_linear > rm_paths_vg
+ruleorder: map_graphaligner_gfa > map_graphaligner
