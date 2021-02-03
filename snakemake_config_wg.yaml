@@ -1,0 +1,23 @@
+## dataset
+dataset: "GRCh38-freeze1"
+chr: "chr20"
+## experiments
+exp: "vg/linear cactus/feb1"
+## s3 root bucket
+s3root: 'vg-k8s/vgamb/wg'
+## vg mapping
+mapper: "giraffe"
+min_k: 29
+min_w: 11
+cover_n: 16
+gbwt_auto: true
+map_cores: 8
+## other mapping
+mapper_lr: "ga"
+## regions to visualize
+viz_bed: "pangenome-viz-regions.bed"
+## input s3 links
+s3_input_links: 'input.graphs.s3.links.csv'
+## output
+html_out: "evaluation-report-wg.html"
+viz_html_out: "visualization-report-wg.html"
