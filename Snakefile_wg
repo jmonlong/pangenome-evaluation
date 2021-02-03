@@ -66,6 +66,24 @@ if 's3_input_links' in config:
     for ii in range(len(s3ln)):
         in_ln[s3ln[1][ii]] = s3ln[0][ii]
 
+rule eval_srmap_vgstats:
+    input:
+        rmd='evaluation-report.Rmd',
+        graph=S3.remote(expand('{sroot}/{exp}.vgstats.txt', sroot=SROOT, exp=EXPS)),
+        degree=S3.remote(expand('{sroot}/{exp}.vgstats-degree.tsv', sroot=SROOT, exp=EXPS)),
+        map=S3.remote(expand('{sroot}/{exp}.stats.txt', sroot=SROOT, exp=EXPS_MAP))
+    output: S3.remote(SROOT + '/' + config['html_out'])
+    params: exps=EXP_LABELS
+    shell:
+        """
+        echo {params.exps} > files.info
+        echo graph {input.graph} >> files.info
+        echo degree {input.degree} >> files.info
+        echo map {input.map} >> files.info
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
+        cp evaluation-report.html {output}
+        """
+
 rule eval_srmap:
     input:
         rmd='evaluation-report.Rmd',
