@@ -18,6 +18,10 @@ CHRS += ['chrX']
 READS=['HG002_5M']
 READS_LR=['HG002-SequelII-merged_15kb_20kb-pbmm2.ss001']
 
+## force boolean config arguments to boolean
+if type(config['gbwt_auto']) == str:
+    config['gbwt_auto'] = config['gbwt_auto'] in ['T', 'true', 'True']
+
 ## List experiments (pangenomes) in the form {method}/{params}/{dataset}.{method}.{params}
 ##  and {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
 ## Note: because some pangenomes use embedded paths and don't, we need this loop and
