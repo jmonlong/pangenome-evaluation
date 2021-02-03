@@ -218,11 +218,11 @@ def pg_input(wildcards):
         return S3.remote(SROOT + '/' + in_ln[in_path])
     else:
         return S3.remote(SROOT + '/' + in_path)
-rule pg_to_vg:
+rule pg_to_xg:
     input: pg_input
-    output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vg')
+    output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.xg')
     threads: 4
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.pg-to-vg.benchmark.tsv')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.pg-to-xg.benchmark.tsv')
     params:
         tmp_vg="{dataset}.{method}.{params}.vg"
     singularity:
@@ -233,6 +233,23 @@ rule pg_to_vg:
         vg index -p -t {threads} -x {output} {params.tmp_vg}
         rm {params.tmp_vg}
         """
+
+def vg_input(wildcards):
+    in_path = '{method}/{params}/{dataset}.{method}.{params}.vg'.format(method=wildcards.method,
+                                                                        params=wildcards.params,
+                                                                        dataset=wildcards.dataset)
+    if in_path in in_ln:
+        return S3.remote(SROOT + '/' + in_ln[in_path])
+    else:
+        return S3.remote(SROOT + '/' + in_path)
+rule vg_to_xg:
+    input: vg_input
+    output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.xg')
+    threads: 4
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.vg-to-xg.benchmark.tsv')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell: "vg index -p -t {threads} -x {output} {input}"
 
 def xg_input(wildcards):
     in_path = '{method}/{params}/{dataset}.{method}.{params}.xg'.format(method=wildcards.method,

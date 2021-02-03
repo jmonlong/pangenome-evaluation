@@ -24,3 +24,4 @@ cactus/minigraph.softmasked.hg38.overlapfix/hpp60-hg38.cactus.minigraph.softmask
 cactus/minigraph.softmasked.hg38.92way/hpp60-hg38.cactus.minigraph.softmasked.hg38.92way.pg,cactus/minigraph-softmasked-hg38-92way/hpp60-hg38.cactus.minigraph-softmasked-hg38-92way.pg
 cactus/GRCh38-freeze1/GRCh38-freeze1.cactus.dec31.gfa.gz,cactus/dec31-full/GRCh38-freeze1.cactus.dec31-full.gfa.gz
 cactus/GRCh38-freeze1/GRCh38-freeze1.cactus.feb1.chopped.noalts.xg,cactus/feb1/GRCh38-freeze1.cactus.feb1.xg
+minigraph/GRCh38-freeze1/GRCh38-freeze1.vg,minigraph/feb3/GRCh38-freeze1.minigraph.feb3.vg
