@@ -162,7 +162,7 @@ rule vg_linear:
     input:
         fa=S3.remote('s3://vg-k8s/users/jmonlong/references/hg38.fa'),
         fai=S3.remote('s3://vg-k8s/users/jmonlong/references/hg38.fa.fai')        
-    output: 'vg/linear/GRCh38-freeze1.vg.linear.xg'
+    output: S3.remote(SROOT + '/vg/linear/GRCh38-freeze1.vg.linear.xg')
     threads: 1
     params:
         tmp_vg="GRCh38-freeze1.vg.linear.vg"
