@@ -12,7 +12,7 @@ if 'vg_docker' not in config:
 
 ## chromosome currently analyzed
 CHRS = ['chr' + str(ch) for ch in range(1,23)]
-CHRS += ['chrX']
+CHRS += ['chrX', 'chrY', 'chrM']
 
 ## reads
 READS=['HG002_5M']
@@ -26,7 +26,8 @@ if type(config['gbwt_auto']) == str:
 ##  and {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
 ## Note: because some pangenomes use embedded paths and don't, we need this loop and
 ##       can't use 'expand' easily to deal with different {mapper} mode used on different pangenomes
-EMB_PATH_METHS = ['cactus', 'seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
+# EMB_PATH_METHS = ['cactus', 'seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
+EMB_PATH_METHS = ['seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
 EXPS = []  ## {method}/{params}/{dataset}.{method}.{params}
 EXPS_MAP = [] ## {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
 EXPS_MAP_LR = [] ## {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
@@ -170,6 +171,41 @@ rule vg_linear:
     threads: 1
     params:
         tmp_vg="GRCh38-freeze1.vg.linear.vg"
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        """
+        vg construct -t {threads} -r {input.fa} > {params.tmp_vg}
+        vg index -p -t {threads} -x {output} {params.tmp_vg}
+        rm {params.tmp_vg}
+        """
+
+rule prepare_hg38_chrs_fa:
+    input:
+        fa=S3.remote('s3://vg-k8s/users/jmonlong/references/hg38.fa'),
+        fai=S3.remote('s3://vg-k8s/users/jmonlong/references/hg38.fa.fai')        
+    output:
+        fa='hg38-chrs.fa',
+        fai='hg38-chrs.fa.fai'
+    threads: 1
+    shell:
+        """
+        rm -f {output.fa} {output.fai}
+        for CHR in `seq 1 22` X Y M
+        do
+        samtools faidx {input.fa} chr$CHR >> {output.fa}
+        done
+        samtools faidx {output.fa}
+        """
+
+rule vg_linear_chrs:
+    input:
+        fa='hg38-chrs.fa',
+        fai='hg38-chrs.fa.fai'
+    output: S3.remote(SROOT + '/vg/linear-chrs/GRCh38-freeze1.vg.linear-chrs.xg')
+    threads: 1
+    params:
+        tmp_vg="GRCh38-freeze1.vg.linear-chrs.vg"
     singularity:
         "docker://" + config['vg_docker']
     shell:

@@ -1,5 +1,5 @@
 ---
-title: Chr 20 sandbox for pangenome construction and evaluation
+title: Pangenome evaluation
 output: html_document
 ---
 
@@ -36,7 +36,6 @@ message(paste(rownames(files.info), collapse=' '))
 ## Pangenome
 
 Stats from `vg stats` after chopping the nodes into max. 32 bp nodes.
-Of note, chr20 is around 64.4 Mbp long in GRCh38.
 
 ```{r vgstats}
 if('graph' %in% rownames(files.info)){
@@ -263,8 +262,6 @@ if('decon' %in% rownames(files.info)){
 ## Short-read Mapping stats
 
 - Reads from HG002.
-- ~50x depth.
-- Chr20 subset: reads mapping to chr20 on the GIAB SV graph.
 
 ```{r mapstats}
 if('map' %in% rownames(files.info)){
@@ -310,7 +307,6 @@ if('map' %in% rownames(files.info)){
 
 - CCS reads from HG002.
 - ~10x depth.
-- Chr20 subset: reads mapping to chr20 on hg38
 
 ```{r mapstats.lr}
 if('maplr' %in% rownames(files.info)){
