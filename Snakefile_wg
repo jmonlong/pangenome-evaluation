@@ -253,7 +253,7 @@ rule vg_to_xg:
         "docker://" + config['vg_docker']
     shell:
         """
-        vg vg mod --chop 32 {input} > {params.tmp_vg}
+        vg mod --chop 32 {input} > {params.tmp_vg}
         vg index -p -t {threads} -x {output} {params.tmp_vg}
         rm {params.tmp_vg}
         """
