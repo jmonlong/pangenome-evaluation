@@ -247,9 +247,16 @@ rule vg_to_xg:
     output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.xg')
     threads: 4
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.vg-to-xg.benchmark.tsv')
+    params:
+        tmp_vg="{dataset}.{method}.{params}.vg"
     singularity:
         "docker://" + config['vg_docker']
-    shell: "vg index -p -t {threads} -x {output} {input}"
+    shell:
+        """
+        vg vg mod --chop 32 {input} > {params.tmp_vg}
+        vg index -p -t {threads} -x {output} {params.tmp_vg}
+        rm {params.tmp_vg}
+        """
 
 def xg_input(wildcards):
     in_path = '{method}/{params}/{dataset}.{method}.{params}.xg'.format(method=wildcards.method,
