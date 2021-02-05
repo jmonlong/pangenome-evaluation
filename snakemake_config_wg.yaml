@@ -2,7 +2,7 @@
 dataset: "GRCh38-freeze1"
 chr: "chr20"
 ## experiments
-exp: "vg/linear vg/linear-chrs cactus/feb1 cactus/feb1-paths minigraph/feb3"
+exp: "vg/linear vg/linear-chrs cactus/feb1 cactus/feb1-paths cactus/feb1-gg minigraph/feb3"
 ## s3 root bucket
 s3root: 'vg-k8s/vgamb/wg'
 ## vg mapping
