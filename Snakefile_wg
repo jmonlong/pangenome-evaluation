@@ -26,8 +26,8 @@ if type(config['gbwt_auto']) == str:
 ##  and {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
 ## Note: because some pangenomes use embedded paths and don't, we need this loop and
 ##       can't use 'expand' easily to deal with different {mapper} mode used on different pangenomes
-# EMB_PATH_METHS = ['cactus', 'seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
-EMB_PATH_METHS = ['seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
+EMB_PATH_METHS = ['cactus', 'seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
+# EMB_PATH_METHS = ['seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
 EXPS = []  ## {method}/{params}/{dataset}.{method}.{params}
 EXPS_MAP = [] ## {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
 EXPS_MAP_LR = [] ## {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
@@ -54,7 +54,7 @@ for ii in range(len(exp_s)):
     if MAPPER == 'giraffe':
         if config['cover_n'] == 'paths' or (config['gbwt_auto'] and exp_meth in EMB_PATH_METHS):
             ## use embedded paths
-            MAPPER = 'giraffe{}k{}wPaths'.format(config['min_k'], config['min_w'])
+            MAPPER = 'giraffe{}k{}wpaths'.format(config['min_k'], config['min_w'])
         else:
             ## use greedy algo to make a path cover from the pangenome
             MAPPER = 'giraffe{}k{}w{}N'.format(config['min_k'], config['min_w'], config['cover_n'])    
@@ -500,10 +500,10 @@ rule real_reads_hg002_ccs:
 rule index_gbwt_greedy:
     input: xg_input
     output:
-        gg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.N{n}.gg'),
-        gbwt=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.N{n}.gbwt')
+        gg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}N.gg'),
+        gbwt=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}N.gbwt')
     threads: 1
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-N{n}.benchmark.tsv')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gbwt-{n}N.benchmark.tsv')
     singularity:
         "docker://" + config['vg_docker']
     shell:
@@ -521,10 +521,20 @@ rule index_gbwt_paths:
     shell:
         'vg index -T -G {output} {input}'
 
+def gbwt_input(wildcards):
+    in_path = '{method}/{params}/map/{dataset}.{method}.{params}.{n}.gbwt'.format(method=wildcards.method,
+                                                                                  params=wildcards.params,
+                                                                                  dataset=wildcards.dataset,
+                                                                                  n=wildcards.n)
+    if in_path in in_ln:
+        return S3.remote(SROOT + '/' + in_ln[in_path])
+    else:
+        return S3.remote(SROOT + '/' + in_path)
+
 rule index_minimizer:
     input:
         xg=xg_input,
-        gbwt=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gbwt')
+        gbwt=gbwt_input
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min')
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-min-k{k}-w{w}-{n}.benchmark.tsv')
@@ -571,34 +581,34 @@ rule map_giraffe:
         f1=S3.remote(SROOT + '/reads/{read}_1.fastq.gz'),
         f2=S3.remote(SROOT + '/reads/{read}_2.fastq.gz'),
         xg=xg_input,
-        min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.N{n}.min'),
+        min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min'),
         dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
-        gbwt=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.N{n}.gbwt')
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}N.gaf'
+        gbwt=gbwt_input
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.gaf'
     threads: config['map_cores']
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}N-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}N-{read}.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-{read}.log')
     singularity:
         "docker://" + config['vg_docker']
     shell:
         'vg giraffe -o gaf -p -t {threads} -b fast -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -f {input.f1} -f {input.f2} > {output} 2> {log}'
 
-rule map_giraffe_paths:
-    input:
-        f1=S3.remote(SROOT + '/reads/{read}_1.fastq.gz'),
-        f2=S3.remote(SROOT + '/reads/{read}_2.fastq.gz'),
-        xg=xg_input,
-        min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.paths.min'),
-        dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
-        gbwt=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.paths.gbwt')
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}wPaths.gaf'
-    threads: config['map_cores']
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}wPaths-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}wPaths-{read}.log')
-    singularity:
-        "docker://" + config['vg_docker']
-    shell:
-        'vg giraffe -o gaf -p -t {threads} -b fast -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -f {input.f1} -f {input.f2} > {output} 2> {log}'
+# rule map_giraffe_paths:
+#     input:
+#         f1=S3.remote(SROOT + '/reads/{read}_1.fastq.gz'),
+#         f2=S3.remote(SROOT + '/reads/{read}_2.fastq.gz'),
+#         xg=xg_input,
+#         min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.paths.min'),
+#         dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
+#         gbwt=gbwt_input
+#     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}wPaths.gaf'
+#     threads: config['map_cores']
+#     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}wPaths-{read}.benchmark.tsv')
+#     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}wPaths-{read}.log')
+#     singularity:
+#         "docker://" + config['vg_docker']
+#     shell:
+#         'vg giraffe -o gaf -p -t {threads} -b fast -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -f {input.f1} -f {input.f2} > {output} 2> {log}'
 
 # pack coverage from the reads
 rule pack_ga:
