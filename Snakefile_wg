@@ -3,65 +3,57 @@ import os
 from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
 S3 = S3RemoteProvider()
 
-## S3 root bucket
+# S3 root bucket
 SROOT=config['s3root']
 
-## vg docker container
+# default vg docker container
 if 'vg_docker' not in config:
     config['vg_docker'] = 'quay.io/vgteam/vg:v1.29.0'
 
-## chromosome currently analyzed
+# chromosome currently analyzed
 CHRS = ['chr' + str(ch) for ch in range(1,23)]
 CHRS += ['chrX', 'chrY', 'chrM']
 
-## reads
-READS=['HG002_5M']
-READS_LR=['HG002-SequelII-merged_15kb_20kb-pbmm2.ss001']
+# readset names
+READS_SR_LC = 'HG002_5M' # short-reads, low-coverage
+READS_LR_LC= 'HG002-SequelII-merged_15kb_20kb-pbmm2.ss001' # CSS reads, low-coverage
 
-## force boolean config arguments to boolean
-if type(config['gbwt_auto']) == str:
-    config['gbwt_auto'] = config['gbwt_auto'] in ['T', 'true', 'True']
+# methods where the default should be to use embedded paths when mapping with giraffe
+EMB_PATH_METHS = ['cactus', 'seqwish', 'vg']
 
-## List experiments (pangenomes) in the form {method}/{params}/{dataset}.{method}.{params}
-##  and {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
-## Note: because some pangenomes use embedded paths and don't, we need this loop and
-##       can't use 'expand' easily to deal with different {mapper} mode used on different pangenomes
-EMB_PATH_METHS = ['cactus', 'seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
-# EMB_PATH_METHS = ['seqwish', 'vg']   ## methods where we should use embedded paths for mapping (for the 'auto' option)
-EXPS = []  ## {method}/{params}/{dataset}.{method}.{params}
-EXPS_MAP = [] ## {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
-EXPS_MAP_LR = [] ## {method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}
-EXPS_SUBGRAPHS = [] ## {method}/{params}/subgraphs/{dataset}.{method}.{params}
-EXP_LABELS = [] ## 
-dataset_s = config['dataset'].split()
-exp_s = config['exp'].split()
-for ii in range(len(exp_s)):
-    exp = exp_s[ii]
-    if len(dataset_s) == len(exp_s):
-        DATASET = '{}'.format(dataset_s[ii])
-        EXP_LABELS.append(DATASET + '_' + exp)
+# parse config and list methods, parameters, datasets and mapper info separately
+METHODS = []
+PARAMS = []
+DATASETS = []
+SRMAPPERS = []
+for exp in config['exp'].split():
+    # split "experiment" into method, params. Optional: dataset, gbwt-mode
+    # e.g.: vg/linear, cactus/feb1/CHM13-freeze1/paths
+    exp = exp.split('/')
+    METHODS.append(exp[0])
+    PARAMS.append(exp[1])
+    # dataset
+    if len(exp) < 3:
+        # missing 'dataset', use 'dataset' in config
+        DATASETS.append(config['dataset'])
     else:
-        DATASET = '{}'.format(dataset_s[0])
-        EXP_LABELS.append(exp)
-    ## Made from 'exp' config that contains {method}/{params}, and the DATASET value computed above
-    EXPS.append(exp + '/' + DATASET + '.' + exp.replace('/', '.'))
-    if exp != 'vg/linear':
-        # no need to visualize the linear reference "graph"
-        EXPS_SUBGRAPHS.append(exp + '/subgraphs/' + DATASET + '.' + exp.replace('/', '.'))
-    exp_meth = exp.split('/')[0]
-    ## eventually match the MAPPER to pangenome ('auto' mode) or non-default mapping mode
-    MAPPER=config['mapper']
-    if MAPPER == 'giraffe':
-        if config['cover_n'] == 'paths' or (config['gbwt_auto'] and exp_meth in EMB_PATH_METHS):
+        DATASETS.append(exp[2])
+    # gbwt mode for giraffe mapping: paths or greedy cover algorithm
+    if len(exp) < 4:
+        # missing 'gbwt-mode', pick automatically
+        if exp[0] in EMB_PATH_METHS:
             ## use embedded paths
-            MAPPER = 'giraffe{}k{}wpaths'.format(config['min_k'], config['min_w'])
+            gbwt_mode = 'paths'
         else:
             ## use greedy algo to make a path cover from the pangenome
-            MAPPER = 'giraffe{}k{}w{}N'.format(config['min_k'], config['min_w'], config['cover_n'])    
-    for read in READS:
-        EXPS_MAP.append(exp + '/map/' + DATASET + '.' + exp.replace('/', '.') + '.' + read + '.' + MAPPER)
-    for read in READS_LR:
-        EXPS_MAP_LR.append(exp + '/map/' + DATASET + '.' + exp.replace('/', '.') + '.' + read + '.' + config['mapper_lr'])
+            gbwt_mode = '{}N'.format(config['cover_n'])    
+    else:
+        gbwt_mode = exp[3]
+    # which mapper to use
+    mapper=config['mapper']
+    if mapper == 'giraffe':
+        mapper = 'giraffe{}k{}w{}'.format(config['min_k'], config['min_w'], gbwt_mode)
+    SRMAPPERS.append(mapper)
 
 ## if the input graph didn't follow the naming conventions, define "links" in this file
 ## CSV: s3 path, new s3 path (that follows naming conventions)
@@ -71,14 +63,23 @@ if 's3_input_links' in config:
     for ii in range(len(s3ln)):
         in_ln[s3ln[1][ii]] = s3ln[0][ii]
 
+## Regions to visualize
+regs = pd.read_csv(config['viz_bed'], sep='\t', header=None)
+REGIONS = []
+for ii in range(len(regs)):
+    REGIONS.append(regs[0][ii] + '-' + str(regs[1][ii]) + '-' + str(regs[2][ii]))
+
 rule eval_srmap_vgstats:
     input:
         rmd='evaluation-report.Rmd',
-        graph=S3.remote(expand('{sroot}/{exp}.vgstats.txt', sroot=SROOT, exp=EXPS)),
-        degree=S3.remote(expand('{sroot}/{exp}.vgstats-degree.tsv', sroot=SROOT, exp=EXPS)),
-        map=S3.remote(expand('{sroot}/{exp}.stats.txt', sroot=SROOT, exp=EXPS_MAP))
+        graph=S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats.txt', zip,
+                               method=METHODS, params=PARAMS, dataset=DATASETS)),
+        degree=S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats-degree.tsv', zip,
+                                method=METHODS, params=PARAMS, dataset=DATASETS)),
+        map=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_SR_LC + '.{mapper}.stats.txt', zip,
+                             method=METHODS, params=PARAMS, dataset=DATASETS, mapper=SRMAPPERS))
     output: S3.remote(SROOT + '/' + config['html_out'])
-    params: exps=EXP_LABELS
+    params: exps=expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
     shell:
         """
         echo {params.exps} > files.info
@@ -92,9 +93,10 @@ rule eval_srmap_vgstats:
 rule eval_srmap:
     input:
         rmd='evaluation-report.Rmd',
-        map=S3.remote(expand('{sroot}/{exp}.stats.txt', sroot=SROOT, exp=EXPS_MAP))
+        map=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt', zip,
+                             method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_LC, mapper=SRMAPPERS))
     output: S3.remote(SROOT + '/' + config['html_out'])
-    params: exps=EXP_LABELS
+    params: exps=expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
     shell:
         """
         echo {params.exps} > files.info
@@ -106,9 +108,10 @@ rule eval_srmap:
 rule eval_lrmap:
     input:
         rmd='evaluation-report.Rmd',
-        maplr=S3.remote(expand('{sroot}/{exp}.stats.txt', sroot=SROOT, exp=EXPS_MAP_LR))
+        maplr=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt', zip,
+                               method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_LR_LC, mapper=config['mapper_lr']))
     output: S3.remote(SROOT + '/' + config['html_out'])
-    params: exps=EXP_LABELS
+    params: exps=expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
     shell:
         """
         echo {params.exps} > files.info
@@ -116,6 +119,28 @@ rule eval_lrmap:
         Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
         cp evaluation-report.html {output}
         """
+
+# reg_roots = expand(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}', zip,
+#                    method=METHODS, params=PARAMS, dataset=DATASETS)
+reg_roots = []
+rr_tpl = SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}'
+for ii in range(len(METHODS)):
+    if METHODS[ii] != 'vg' and PARAMS != 'linear':
+        reg_roots.append(rr_tpl.format(method=METHODS[ii], params=PARAMS[ii], dataset=DATASETS[ii]))
+rule viz:
+    input:
+        rmd='visualization-report.Rmd',
+        bed=config['viz_bed'],
+        vgview=S3.remote(expand('{root}.{region}_c50.dot.svg', root=reg_roots, region=REGIONS)),
+        odgiviz=S3.remote(expand('{root}.{region}_c50.odgi.png', root=reg_roots, region=REGIONS))
+    output: S3.remote(SROOT + '/' + config['viz_html_out'])
+    run:
+        outf = open('files.info', 'w')
+        outf.write('vgview {}\n'.format(' '.join(input.vgview)))
+        outf.write('odgiviz {}\n'.format(' '.join(input.odgiviz)))
+        outf.close()
+        shell("Rscript -e 'rmarkdown::render(\"visualization-report.Rmd\")' files.info {input.bed}")
+        shell("cp visualization-report.html {output}")
 
 ##
 ## Misc
@@ -394,24 +419,24 @@ rule dist_stats:
         """
 
 rule extract_region_dot:
-    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
+    input: xg_input
     output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.dot')
     singularity:
         "docker://" + config['vg_docker']
     shell:
         """
-        CHRP=`vg paths -L -x {input} | grep -e hg38 -e "^{CHR}" | head -1`
+        CHRP=`vg paths -L -x {input} | grep -e "{wildcards.path}$" | head -1`
         vg find -x {input} -c {wildcards.context} -p $CHRP:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg paths -r -Q $CHRP -v - | vg view -dup - > {output}
         """
 
 rule extract_region_gfa:
-    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
+    input: xg_input
     output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.gfa')
     singularity:
         "docker://" + config['vg_docker']
     shell:
         """
-        CHRP=`vg paths -L -x {input} | grep -e hg38 -e "^{CHR}" | head -1`
+        CHRP=`vg paths -L -x {input} | grep -e "{wildcards.path}$" | head -1`
         vg find -x {input} -c {wildcards.context} -p $CHRP:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg view -g - > {output}
         """
 
