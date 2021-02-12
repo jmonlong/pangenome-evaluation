@@ -497,7 +497,8 @@ rule dwl_giab_hg002:
 rule subsample_reads_hg002:
     input: 'reads/HG002_{r}.fastq.gz'
     output: S3.remote(SROOT + '/reads/HG002_5M_{r,[12]}.fastq.gz')
-    shell: "head -20000000 < <(zcat {input}) | gzip > {output}"
+    singularity: 'docker://quay.io/biocontainers/seqtk:1.3--hed695b0_2'
+    shell: "seqtk sample -s100 {input} 5000000 | gzip > {output}"
 
 rule dwl_hg002_ccs_bam:
     output:
