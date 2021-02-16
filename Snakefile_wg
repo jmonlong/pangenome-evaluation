@@ -266,7 +266,7 @@ rule gfa_to_xg:
     shell:
         """
         zcat {input} > {params.tmp_gfa}
-        vg convert -gp {params.tmp_gfa} | vg mod --unchop - | vg mod --chop 32 - > {params.tmp_vg}
+        vg convert -t {threads} -r 1000000 -gp {params.tmp_gfa} | vg mod --unchop - | vg mod --chop 32 - > {params.tmp_vg}
         vg index -p -t {threads} -x {output} {params.tmp_vg}
         rm {params.tmp_gfa} {params.tmp_vg}
         """
