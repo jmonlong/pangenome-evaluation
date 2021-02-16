@@ -34,9 +34,8 @@ Only the reference path is shown for now.
 ```{r vgview, results='asis'}
 imgs.df = tibble(full.path=as.character(files.info['vgview',])) %>%
   mutate(filen=basename(full.path),
-         graph=gsub('(.*)_[^_]*_c[0-9]+.dot.svg', '\\1', filen),
-         graph=gsub('[^\\.]+\\.(.*)', '\\1', graph),
-         region=gsub('.*_([^_]*)_c[0-9]+.dot.svg', '\\1', filen))
+         graph=gsub('(.*)\\.[^\\.]*_c[0-9]+.dot.svg', '\\1', filen),
+         region=gsub('.*\\.([^\\.]*)_c[0-9]+.dot.svg', '\\1', filen))
 
 tmp = lapply(unique(imgs.df$region), function(region.label){
   cat('\n\n### ', region.label, '\n\n')
@@ -45,9 +44,6 @@ tmp = lapply(unique(imgs.df$region), function(region.label){
   ## description
   desc = regs.df %>% filter(start==pos.s, end==pos.e)
   cat(paste0('**', region.label, ' ', desc$desc[1], '**\n\n'))
-  ## cactus hubs
-  cat(paste0('[Cactus Hub: cactus.star-single-copy-fatanc-og-july-7](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2329489_hg38&position=chr20%3A', pos.s, '%2D', pos.e, ')\n\n'))
-  cat(paste0('[Cactus Hub: cactus.minimap2_star-all-to-ref-fatanc-no-secondary-july-8](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2329541_hg38_chr20&position=chr20%3A', pos.s, '%2D', pos.e, ')\n\n'))
   ## images
   imgs.df = subset(imgs.df, region==region.label)
   lapply(unique(imgs.df$graph), function(graph.label){
@@ -71,9 +67,8 @@ Images made using `odgi viz`.
 ```{r odgiviz, results='asis'}
 imgs.df = tibble(full.path=as.character(files.info['odgiviz',])) %>%
   mutate(filen=basename(full.path),
-         graph=gsub('(.*)_[^_]*_c[0-9]+.odgi.png', '\\1', filen),
-         graph=gsub('[^\\.]+\\.(.*)', '\\1', graph),
-         region=gsub('.*_([^_]*)_c[0-9]+.odgi.png', '\\1', filen))
+         graph=gsub('(.*)\\.[^\\.]*_c[0-9]+.odgi.png', '\\1', filen),
+         region=gsub('.*\\.([^\\.]*)_c[0-9]+.odgi.png', '\\1', filen))
 
 tmp = lapply(unique(imgs.df$region), function(region.label){
   cat('\n\n### ', region.label, '\n\n')
@@ -82,9 +77,6 @@ tmp = lapply(unique(imgs.df$region), function(region.label){
   ## description
   desc = regs.df %>% filter(start==pos.s, end==pos.e)
   cat(paste0('**', region.label, ' ', desc$desc[1], '**\n\n'))
-  ## cactus hubs
-  cat(paste0('[Cactus Hub: cactus.star-single-copy-fatanc-og-july-7](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2329489_hg38&position=chr20%3A', pos.s, '%2D', pos.e, ')\n\n'))
-  cat(paste0('[Cactus Hub: cactus.minimap2_star-all-to-ref-fatanc-no-secondary-july-8](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2329541_hg38_chr20&position=chr20%3A', pos.s, '%2D', pos.e, ')\n\n'))
   ## images
   imgs.df = subset(imgs.df, region==region.label)
   lapply(unique(imgs.df$graph), function(graph.label){
