@@ -688,41 +688,45 @@ rule call_novcf:
 ## Map reads using GraphAligner
 ##
 
+rule map_graphaligner_gfa_conv:
+    input: xg_input
+    output: 'for_graph_aligner.{dataset}.{method}.{params}.gfa'
+    threads: 8
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-gfaconv.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-gfaconv.log')
+    singularity: "docker://" + config['vg_docker']
+    shell: "vg view -g {input} > {output}"
+
+
 rule map_graphaligner:
     input:
         fastq=S3.remote(SROOT + '/reads/{read}.fastq.gz'),
-        xg=xg_input
+        gfa='for_graph_aligner.{dataset}.{method}.{params}.gfa'
     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
     threads: config['map_cores']
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-{read}.log')
-    params:
-        gfa = 'temp.{dataset}.{method}.{params}.gfa'
-    shell:
-        """
-        vg view -g {input.xg} > {params.gfa}
-        GraphAligner -g {params.gfa} -f {input.fastq} -a {output} -x vg -t {threads} 2> {log}
-        rm -f {params.gfa}
-        """
+    singularity: 'docker://quay.io/biocontainers/graphaligner:1.0.12--he1c1bb9_0'
+    shell: "GraphAligner -g {input.gfa} -f {input.fastq} -a {output} -x vg -t {threads} 2> {log}"
 
-rule map_graphaligner_gfa:
-    input:
-        fastq=S3.remote(SROOT + '/reads/{read}.fastq.gz'),
-        gfa=gfa_input
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
-    threads: config['map_cores']
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-{read}.log')
-    params:
-        gfa = 'temp.{dataset}.{method}.{params}.gfa'
-    shell:
-        """
-        zcat {input.gfa} > {params.gfa}
-        GraphAligner -g {params.gfa} -f {input.fastq} -a {output} -x vg -t {threads} 2> {log}
-        rm -f {params.gfa}
-        """
+# rule map_graphaligner_gfa:
+#     input:
+#         fastq=S3.remote(SROOT + '/reads/{read}.fastq.gz'),
+#         gfa=gfa_input
+#     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
+#     threads: config['map_cores']
+#     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-{read}.benchmark.tsv')
+#     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-{read}.log')
+#     params:
+#         gfa = 'temp.{dataset}.{method}.{params}.gfa'
+#     shell:
+#         """
+#         zcat {input.gfa} > {params.gfa}
+#         GraphAligner -g {params.gfa} -f {input.fastq} -a {output} -x vg -t {threads} 2> {log}
+#         rm -f {params.gfa}
+#         """
 
-ruleorder: map_graphaligner_gfa > map_graphaligner
+# ruleorder: map_graphaligner_gfa > map_graphaligner
 
 # Preference to specific rules if multiple could be used
 ruleorder: deconstruct_vcf_minigraph > deconstruct_vcf
