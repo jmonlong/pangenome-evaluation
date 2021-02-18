@@ -259,6 +259,73 @@ if('decon' %in% rownames(files.info)){
 }
 ```
 
+### Variant genotyping
+
+Genotype the variation present in the graph using `vg call` (from `vg giraffe` mapping of short-reads).
+
+```{r callsr}
+if('callsr' %in% rownames(files.info)){
+  vcf.l = lapply(colnames(files.info), function(exp){
+    message(exp)
+    vcf = readVcf(files.info['callsr', exp], param=ScanVcfParam(samples=NA))
+    if(length(vcf)==0){
+      sum.df = tibble(graph=exp, all=0, snv=0, indel.del=0, indel.ins=0,
+                      sv.del=0, sv.ins=0)
+      return(list(sum.df=sum.df))
+    }
+    ## compute variant size from the length of seq in REF and ALT(s)
+    alt.size.c = nchar(rowRanges(vcf)$ALT)
+    size.df = tibble(
+      ref.size=rep(nchar(rowRanges(vcf)$REF), unlist(lapply(alt.size.c, length))),
+      alt.size=unlist(alt.size.c),
+      queryHits=rep(1:length(vcf), unlist(lapply(alt.size.c, length)))) %>%
+      mutate(var.size=alt.size-ref.size)
+    ## for size distribution
+    size.s = size.df %>%
+      mutate(graph=exp,
+             type=ifelse(var.size>0, 'INS', 'DEL'),
+             type=ifelse(var.size==0, 'SNV', type),
+             var.size=cut(abs(var.size), breaks=size.breaks, labels=size.labs)) %>%
+      group_by(graph, type, var.size) %>% summarize(n=n())
+    ## summary for the table
+    sum.df = size.df %>% summarize(
+                           graph=exp,
+                           all=length(var.size),
+                           snv=sum(var.size==0),
+                           indel.del=sum(var.size<0 & var.size>-50),
+                           indel.ins=sum(var.size>0 & var.size<50),
+                           sv.del=sum(var.size <= -50),
+                           sv.ins=sum(var.size >= 50))
+    return(list(sum.df=sum.df, size.df=size.s))
+  })
+
+  sum.df = lapply(vcf.l, function(ll) ll$sum.df) %>% bind_rows
+  sum.df %>% arrange(all) %>% datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
+
+  ## size distribution
+  size.df = lapply(vcf.l, function(ll) ll$size.df) %>% bind_rows
+
+  size.df %>% group_by(graph, type) %>% 
+    filter(type=='DEL') %>% 
+    plot_ly(x=~var.size, y=~n, color=~graph, text=~n, data=.,
+            hovertemplate='%{x} bp\n%{text} deletions') %>%
+    add_bars() %>%
+    layout(xaxis=list(title='deletion size (bp)'),
+           yaxis=list(title='number of deletions'),
+           legend = list(orientation = 'h'))
+
+  size.df %>% group_by(graph, type) %>% 
+    filter(type=='INS') %>% 
+    plot_ly(x=~var.size, y=~n, color=~graph, text=~n, data=.,
+            hovertemplate='%{x} bp\n%{text} insertions') %>%
+    add_bars() %>%
+    layout(xaxis=list(title='insertion size (bp)'),
+           yaxis=list(title='number of insertions'),
+           legend = list(orientation = 'h'))
+
+}
+```
+
 ## Short-read Mapping stats
 
 - Reads from HG002.

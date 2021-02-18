@@ -121,6 +121,21 @@ rule eval_lrmap:
         cp evaluation-report.html {output}
         """
 
+rule eval_srcall:
+    input:
+        rmd='evaluation-report.Rmd',
+        callsr=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf.bgz', zip,
+                                method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
+    output: S3.remote(SROOT + '/' + config['html_out'])
+    params: exps=expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
+    shell:
+        """
+        echo {params.exps} > files.info
+        echo callsr {input.callsr} >> files.info
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
+        cp evaluation-report.html {output}
+        """
+
 # reg_roots = expand(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}', zip,
 #                    method=METHODS, params=PARAMS, dataset=DATASETS)
 reg_roots = []
