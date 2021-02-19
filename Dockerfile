@@ -149,7 +149,7 @@ RUN git clone https://github.com/natir/fpa.git && \
         cd fpa && \
         git checkout v0.5.1 && \
         cargo build && \
-        cargo install --path .
+	cargo install --path .
 
 ## seqwish
 RUN apt-get update && \

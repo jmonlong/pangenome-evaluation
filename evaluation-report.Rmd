@@ -29,6 +29,23 @@ winsor <- function(x, u){
 ## - other rows starts with info type ('graph', 'map', 'decon') and then the path to the corresponding file for each experiment
 files.info = read.table('files.info', as.is=TRUE)
 message(paste(rownames(files.info), collapse=' '))
+
+## other arguments, e.g. aliases
+args = commandArgs(TRUE)
+if(length(args)>1){
+  if(args[1] != 'NA'){
+    ## parse aliases
+    al = lapply(strsplit(args[1], ';')[[1]], function(x) unlist(strsplit(x, '=')))
+    alconv = make.names(unlist(lapply(al, '[', 2)))
+    names(alconv) = make.names(unlist(lapply(al, '[', 1)))
+    ## rename columns using the specified aliases
+    al.ii = which(colnames(files.info) %in% names(alconv))
+    if(length(al.ii)>0){
+      colnames(files.info)[al.ii] = alconv[colnames(files.info)[al.ii]]
+    }
+  }
+}
+
 ```
 
 # {.tabset}

@@ -10,6 +10,11 @@ SROOT=config['s3root']
 if 'vg_docker' not in config:
     config['vg_docker'] = 'quay.io/vgteam/vg:v1.29.0'
 
+if 'report_alias' in config:
+    REPORT_ALIAS = config['report_alias']
+else:
+    REPORT_ALIAS = 'NA'
+
 # chromosome currently analyzed
 CHRS = ['chr' + str(ch) for ch in range(1,23)]
 CHRS += ['chrX', 'chrY', 'chrM']
@@ -87,7 +92,7 @@ rule eval_srmap_vgstats:
         echo graph {input.graph} >> files.info
         echo degree {input.degree} >> files.info
         echo map {input.map} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")' {REPORT_ALIAS}
         cp evaluation-report.html {output}
         """
 
@@ -102,7 +107,7 @@ rule eval_srmap:
         """
         echo {params.exps} > files.info
         echo map {input.map} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")' {REPORT_ALIAS}
         cp evaluation-report.html {output}
         """
 
@@ -117,7 +122,7 @@ rule eval_lrmap:
         """
         echo {params.exps} > files.info
         echo maplr {input.maplr} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")' {REPORT_ALIAS}
         cp evaluation-report.html {output}
         """
 
@@ -132,7 +137,7 @@ rule eval_srcall:
         """
         echo {params.exps} > files.info
         echo callsr {input.callsr} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")' {REPORT_ALIAS}
         cp evaluation-report.html {output}
         """
 
