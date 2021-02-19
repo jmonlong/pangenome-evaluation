@@ -10,11 +10,6 @@ SROOT=config['s3root']
 if 'vg_docker' not in config:
     config['vg_docker'] = 'quay.io/vgteam/vg:v1.29.0'
 
-if 'report_alias' in config:
-    REPORT_ALIAS = '"' + config['report_alias'] + '"'
-else:
-    REPORT_ALIAS = 'NA'
-
 # chromosome currently analyzed
 CHRS = ['chr' + str(ch) for ch in range(1,23)]
 CHRS += ['chrX', 'chrY', 'chrM']
@@ -61,6 +56,11 @@ for exp in config['exp'].split():
         mapper = 'giraffe{}k{}w{}'.format(config['min_k'], config['min_w'], gbwt_mode)
     SRMAPPERS.append(mapper)
 
+# how to name the graphs in the report. e.g. to simpify the names
+REPORT_ALIAS = expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
+if 'report_alias' in config:
+    REPORT_ALIAS = config['report_alias']
+
 ## if the input graph didn't follow the naming conventions, define "links" in this file
 ## CSV: s3 path, new s3 path (that follows naming conventions)
 in_ln = {}
@@ -85,14 +85,13 @@ rule eval_srmap_vgstats:
         map=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_SR_LC + '.{mapper}.stats.txt', zip,
                              method=METHODS, params=PARAMS, dataset=DATASETS, mapper=SRMAPPERS))
     output: S3.remote(SROOT + '/' + config['html_out'])
-    params: exps=expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
     shell:
         """
-        echo {params.exps} > files.info
+        echo {REPORT_ALIAS} > files.info
         echo graph {input.graph} >> files.info
         echo degree {input.degree} >> files.info
         echo map {input.map} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")' {REPORT_ALIAS}
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
         cp evaluation-report.html {output}
         """
 
@@ -102,12 +101,11 @@ rule eval_srmap:
         map=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt', zip,
                              method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_LC, mapper=SRMAPPERS))
     output: S3.remote(SROOT + '/' + config['html_out'])
-    params: exps=expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
     shell:
         """
-        echo {params.exps} > files.info
+        echo {REPORT_ALIAS} > files.info
         echo map {input.map} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")' {REPORT_ALIAS}
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
         cp evaluation-report.html {output}
         """
 
@@ -117,12 +115,11 @@ rule eval_lrmap:
         maplr=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt', zip,
                                method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_LR_LC, mapper=config['mapper_lr']))
     output: S3.remote(SROOT + '/' + config['html_out'])
-    params: exps=expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
     shell:
         """
-        echo {params.exps} > files.info
+        echo {REPORT_ALIAS} > files.info
         echo maplr {input.maplr} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")' {REPORT_ALIAS}
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
         cp evaluation-report.html {output}
         """
 
@@ -132,12 +129,11 @@ rule eval_srcall:
         callsr=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf.bgz', zip,
                                 method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
     output: S3.remote(SROOT + '/' + config['html_out'])
-    params: exps=expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
     shell:
         """
-        echo {params.exps} > files.info
+        echo {REPORT_ALIAS} > files.info
         echo callsr {input.callsr} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")' {REPORT_ALIAS}
+        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
         cp evaluation-report.html {output}
         """
 

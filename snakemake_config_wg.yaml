@@ -17,7 +17,7 @@ viz_bed: "pangenome-viz-regions-wg.bed"
 ## input s3 links
 s3_input_links: 'input.graphs.s3.links.csv'
 ## alias for reports
-report_alias: 'vg/linear=GRCH38.linear;cactus/feb10=GRCh38.cactus;cactus/feb10/CHM13-freeze1=CHRM13.cactus;minigraph/feb3-paths/GRCh38-freeze1/paths=GRCh38.minigraph;minigraph/feb3/CHM13-freeze1=CHM13-minigraph'
+report_alias: 'GRCH38.linear GRCh38.minigraph.cactus CHRM13.minigraph.cactus GRCh38.minigraph CHM13.minigraph'
 ## output
 html_out: "evaluation-report-wg.html"
 viz_html_out: "visualization-report-wg.html"
