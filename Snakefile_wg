@@ -11,7 +11,7 @@ if 'vg_docker' not in config:
     config['vg_docker'] = 'quay.io/vgteam/vg:v1.29.0'
 
 if 'report_alias' in config:
-    REPORT_ALIAS = config['report_alias']
+    REPORT_ALIAS = '"' + config['report_alias'] + '"'
 else:
     REPORT_ALIAS = 'NA'
 
