@@ -1,5 +1,5 @@
 ---
-title: Visualizing regions in chr 20 pangenomes
+title: Visualizing regions in pangenomes
 output: html_document
 ---
 
