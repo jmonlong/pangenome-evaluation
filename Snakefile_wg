@@ -460,7 +460,7 @@ rule extract_region_gfa:
     input:
         xg=xg_input,
         gbwt=gbwt_input
-    output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.gfa')
+    output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{n}.{path}-{start}-{end}_c{context}.gfa'),
     singularity:
         "docker://" + config['vg_docker']
     shell:
@@ -486,7 +486,7 @@ rule dot_to_svg:
         """
 
 rule odgi_viz:
-    input: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.gfa')
+    input: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.paths.{path}-{start}-{end}_c{context}.gfa')
     output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.odgi.png')
     shell:
         """

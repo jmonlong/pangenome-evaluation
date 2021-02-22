@@ -1,7 +1,7 @@
 ## dataset
 dataset: "GRCh38-freeze1"
 ## experiments
-exp: "cactus/feb10 minigraph/feb3"
+exp: "cactus/feb10 minigraph/feb3-paths"
 ## s3 root bucket
 s3root: 'vg-k8s/vgamb/wg'
 ## vg mapping
