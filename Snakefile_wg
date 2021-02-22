@@ -345,6 +345,16 @@ def xg_input(wildcards):
     else:
         return S3.remote(SROOT + '/' + in_path)
 
+def gbwt_input(wildcards):
+    in_path = '{method}/{params}/map/{dataset}.{method}.{params}.{n}.gbwt'.format(method=wildcards.method,
+                                                                                  params=wildcards.params,
+                                                                                  dataset=wildcards.dataset,
+                                                                                  n=wildcards.n)
+    if in_path in in_ln:
+        return S3.remote(SROOT + '/' + in_ln[in_path])
+    else:
+        return S3.remote(SROOT + '/' + in_path)
+    
 rule vg_stats:
     input: xg_input
     output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats.txt')
@@ -447,14 +457,16 @@ rule extract_region_dot:
         """
 
 rule extract_region_gfa:
-    input: xg_input
+    input:
+        xg=xg_input,
+        gbwt=gbwt_input
     output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.gfa')
     singularity:
         "docker://" + config['vg_docker']
     shell:
         """
         CHRP=`vg paths -L -x {input} | grep -e "{wildcards.path}$" | head -1`
-        vg find -x {input} -c {wildcards.context} -p $CHRP:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg view -g - > {output}
+        vg chunk -x {input.xg} -G {input.gbwt} -T -c {wildcards.context} -p $CHRP:{wildcards.start}-{wildcards.end} | vg mod -Ou - | vg view -g - > {output}
         """
 
 rule dot_to_png:
@@ -568,16 +580,6 @@ rule index_gbwt_paths:
         "docker://" + config['vg_docker']
     shell:
         'vg index -T -G {output} {input}'
-
-def gbwt_input(wildcards):
-    in_path = '{method}/{params}/map/{dataset}.{method}.{params}.{n}.gbwt'.format(method=wildcards.method,
-                                                                                  params=wildcards.params,
-                                                                                  dataset=wildcards.dataset,
-                                                                                  n=wildcards.n)
-    if in_path in in_ln:
-        return S3.remote(SROOT + '/' + in_ln[in_path])
-    else:
-        return S3.remote(SROOT + '/' + in_path)
 
 rule index_minimizer:
     input:
