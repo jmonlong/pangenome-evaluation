@@ -697,7 +697,7 @@ rule call_novcf:
         xg=xg_input,
         snarls=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.snarls')
     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf'
-    threads: 8
+    threads: 1
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-call-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-call-{read}.log')
     singularity:
