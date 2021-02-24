@@ -380,7 +380,7 @@ rule map_stats:
     threads: 1
     shell:
         """
-        gunzip -c {input} | awk '{{if($10=="*"){{$12=-1}};if($10!="*" && $10==$11){{perf="true"}}else{{perf="false"}};if($10!="*" && $10/$11>.99){{nn="true"}}else{{nn="false"}};print $12,perf,nn}}' | sort | uniq -c > {output}
+        gunzip -c {input} | awk '{{if($10=="*"){{$12=-1}};if($10!="*" && $10==$11){{perf="true"}}else{{perf="false"}};if($10!="*" && $10/$11>=.99){{nn="true"}}else{{nn="false"}};print $12,perf,nn}}' | sort | uniq -c > {output}
         """
 
 rule deconstruct_vcf_minigraph:
