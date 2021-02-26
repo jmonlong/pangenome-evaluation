@@ -707,6 +707,25 @@ rule call_novcf:
         vg call -k {input.pack} -t {threads} -s HG002 --snarls {input.snarls} {input.xg} > {output} 2> {log}
         """
 
+rule call_novcf_gbwt:
+    input:
+        pack=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.pack'),
+        xg=xg_input,
+        gbwt=gbwt_input,
+        snarls=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.snarls')
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.call.vcf'
+    threads: 8
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-{read}.log')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        """
+        vg call -k {input.pack} -t {threads} -s HG002 --snarls {input.snarls} {input.xg} > {output} 2> {log}
+        """
+
+ruleorder: call_novcf_gbwt > call_novcf
+        
 ##
 ## Map reads using GraphAligner
 ##
