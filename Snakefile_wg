@@ -721,7 +721,7 @@ rule call_novcf_gbwt:
         "docker://" + config['vg_docker']
     shell:
         """
-        vg call -k {input.pack} -t {threads} -s HG002 --snarls {input.snarls} {input.xg} > {output} 2> {log}
+        vg call -k {input.pack} -t {threads} -s HG002 --snarls {input.snarls} --gbwt {input.gbwt} {input.xg} > {output} 2> {log}
         """
 
 ruleorder: call_novcf_gbwt > call_novcf
