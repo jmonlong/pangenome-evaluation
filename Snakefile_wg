@@ -79,7 +79,7 @@ for ii in range(len(regs)):
 ## which evaluation module to use
 eval_mods = 'vgstats'
 if 'eval' in config:
-    eval_mods = config['eval'].split(';')
+    eval_mods = config['eval'].split('_')
 
 def info_file_eval(wildcards):
     ifs = {'rmd': 'evaluation-report.Rmd'}
