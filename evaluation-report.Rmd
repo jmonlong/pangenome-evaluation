@@ -94,16 +94,23 @@ if('degree' %in% rownames(files.info)){
 
 ## Variation {.tabset}
 
+```{r varinit}
+## how to split SVs in to size classes in the graphs
+size.breaks = c(-1, 0, 10, 49, 100, 500, 1000, 5000, 1e4, 1e5, 1e6,Inf)
+size.labs = c('0', '1-10', '11-49', '50-100', '100-500',
+              '500-1K', '1K-5K', '5K-10K', '10K-100K', '100K-1M', '>1M')
+```
+
 ### Snarls
 
 Stats extracted from the distance index with `vg view -B`.
 As an estimate of the variation, let's look at the difference between maximum and minimum length of paths traversing the snarl.
 The *depth* represents how embedded a snarl is.
 
-```{r diststats}
-if('diststats' %in% rownames(files.info)){
+```{r snarl}
+if('snarl' %in% rownames(files.info)){
   snarls.df = lapply(colnames(files.info), function(exp){
-    read.table(files.info['diststats', exp], as.is=TRUE, sep='\t', header=TRUE) %>%
+    read.table(files.info['snarl', exp], as.is=TRUE, sep='\t', header=TRUE) %>%
       mutate(graph=exp, diff_length=max_length-min_length)
   }) %>% bind_rows
 
@@ -111,10 +118,6 @@ if('diststats' %in% rownames(files.info)){
     summarize(nb.snarls=n(), depth.mean=round(mean(depth), 3), min_max.dist.diff.mean=round(mean(diff_length), 3)) %>%
     arrange(nb.snarls) %>% 
     datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
-
-  size.breaks = c(-1, 0, 10, 49, 100, 500, 1000, 5000, 1e4, 1e5, 1e6,Inf)
-  size.labs = c('0', '1-10', '11-49', '50-100', '100-500',
-                '500-1K', '1K-5K', '5K-10K', '10K-100K', '100K-1M', '>1M')
 
   snarls.df %>% mutate(diff_length=cut(diff_length, breaks=size.breaks, labels=size.labs)) %>%
     group_by(graph, diff_length) %>% summarize(n=n()) %>%
@@ -280,11 +283,11 @@ if('decon' %in% rownames(files.info)){
 
 Genotype the variation present in the graph using `vg call` (from `vg giraffe` mapping of short-reads).
 
-```{r callsr}
-if('callsr' %in% rownames(files.info)){
+```{r srcall}
+if('srcall' %in% rownames(files.info)){
   vcf.l = lapply(colnames(files.info), function(exp){
     message(exp)
-    vcf = readVcf(files.info['callsr', exp], param=ScanVcfParam(samples=NA))
+    vcf = readVcf(files.info['srcall', exp], param=ScanVcfParam(samples=NA))
     if(length(vcf)==0){
       sum.df = tibble(graph=exp, all=0, snv=0, indel.del=0, indel.ins=0,
                       sv.del=0, sv.ins=0)
@@ -350,18 +353,20 @@ if('callsr' %in% rownames(files.info)){
 ```{r mapstats}
 if('map' %in% rownames(files.info)){
   mapq.df = lapply(colnames(files.info), function(exp){
-    mapq.r = read.table(files.info['map', exp])
-    colnames(mapq.r) = c('reads', 'mapq', 'perfect', 'match99')
-    mapq.r %>% mutate(graph=exp, perfect=as.logical(perfect), match99=as.logical(match99))
+    mapq.r = read.table(files.info['map', exp], as.is=TRUE, header=TRUE)
+    ## colnames(mapq.r) = c('reads', 'mapq', 'perfect', 'match99')
+    mapq.r %>% mutate(graph=exp, perfect=match=='100',
+                      match99=match %in% c('100', '99'))
   }) %>% bind_rows
 
   mapq.df %>% group_by(graph) %>%
     summarize(all=sum(reads),
-              unmapped=round(sum(reads[mapq==-1])/all, 4),
-              mapq.0=round(sum(reads[mapq==0])/all, 4),
-              mapq.geq60=round(sum(reads[mapq>=60])/all, 4),
-              align_99perc=round(sum(reads[match99])/all, 4),
-              perfect_align=round(sum(reads[perfect])/all, 4)) %>%
+              unmapped=round(sum(reads[which(mapq==-1)])/all, 4),
+              mapq.0=round(sum(reads[which(mapq==0)])/all, 4),
+              mapq.geq60=round(sum(reads[which(mapq>=60)])/all, 4),
+              align_99perc=round(sum(reads[which(match99)])/all, 4),
+              perfect_align=round(sum(reads[which(perfect)])/all, 4),
+              noindel=round(sum(reads[which(!indel)])/all, 4)) %>%
     dplyr::select(-all) %>% 
     arrange(unmapped, desc(perfect_align)) %>% 
     datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))

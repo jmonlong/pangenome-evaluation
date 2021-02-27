@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import gzip
 from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
 S3 = S3RemoteProvider()
 
@@ -75,67 +76,50 @@ REGIONS = []
 for ii in range(len(regs)):
     REGIONS.append(regs[0][ii] + '-' + str(regs[1][ii]) + '-' + str(regs[2][ii]))
 
-rule eval_srmap_vgstats:
-    input:
-        rmd='evaluation-report.Rmd',
-        graph=S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats.txt', zip,
-                               method=METHODS, params=PARAMS, dataset=DATASETS)),
-        degree=S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats-degree.tsv', zip,
-                                method=METHODS, params=PARAMS, dataset=DATASETS)),
-        map=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_SR_LC + '.{mapper}.stats.txt', zip,
-                             method=METHODS, params=PARAMS, dataset=DATASETS, mapper=SRMAPPERS))
-    output: S3.remote(SROOT + '/' + config['html_out'])
-    shell:
-        """
-        echo {REPORT_ALIAS} > files.info
-        echo graph {input.graph} >> files.info
-        echo degree {input.degree} >> files.info
-        echo map {input.map} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
-        cp evaluation-report.html {output}
-        """
+## which evaluation module to use
+eval_mods = 'vgstats'
+if 'eval' in config:
+    eval_mods = config['eval'].split(';')
 
-rule eval_srmap:
-    input:
-        rmd='evaluation-report.Rmd',
-        map=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt', zip,
-                             method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_LC, mapper=SRMAPPERS))
-    output: S3.remote(SROOT + '/' + config['html_out'])
-    shell:
-        """
-        echo {REPORT_ALIAS} > files.info
-        echo map {input.map} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
-        cp evaluation-report.html {output}
-        """
+def info_file_eval(wildcards):
+    ifs = {'rmd': 'evaluation-report.Rmd'}
+    if 'vgstats' in eval_mods:
+        ifs['graph'] = S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats.txt', zip,
+                                        method=METHODS, params=PARAMS, dataset=DATASETS))
+        ifs['degree'] = S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats-degree.tsv', zip,
+                                         method=METHODS, params=PARAMS, dataset=DATASETS))
+    if 'srmap' in eval_mods:
+        ifs['map'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_SR_LC + '.{mapper}.stats.txt', zip,
+                                      method=METHODS, params=PARAMS, dataset=DATASETS, mapper=SRMAPPERS))
+    if 'lrmap' in eval_mods:
+        ifs['maplr'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt', zip,
+                                        method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_LR_LC, mapper=config['mapper_lr']))
+    if 'srcall' in eval_mods:
+        ifs['srcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf.bgz', zip,
+                                         method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
+    if 'snarl' in eval_mods:
+        ifs['snarl'] = S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.dist-stats.tsv.gz', zip,
+                                         method=METHODS, params=PARAMS, dataset=DATASETS))
+    if 'decon' in eval_mods:
+        ifs['decon'] = S3.remote(expand('{method}/{params}/{dataset}.{method}.{params}.decon.altsplit.vcf', zip,
+                                        method=METHODS, params=PARAMS, dataset=DATASETS))
+    return(ifs)
 
-rule eval_lrmap:
-    input:
-        rmd='evaluation-report.Rmd',
-        maplr=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt', zip,
-                               method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_LR_LC, mapper=config['mapper_lr']))
+rule eval_report:
+    input: 
+        unpack(info_file_eval)
     output: S3.remote(SROOT + '/' + config['html_out'])
-    shell:
-        """
-        echo {REPORT_ALIAS} > files.info
-        echo maplr {input.maplr} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
-        cp evaluation-report.html {output}
-        """
-
-rule eval_srcall:
-    input:
-        rmd='evaluation-report.Rmd',
-        callsr=S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf.bgz', zip,
-                                method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
-    output: S3.remote(SROOT + '/' + config['html_out'])
-    shell:
-        """
-        echo {REPORT_ALIAS} > files.info
-        echo callsr {input.callsr} >> files.info
-        Rscript -e 'rmarkdown::render("evaluation-report.Rmd")'
-        cp evaluation-report.html {output}
-        """
+    run:
+        infof = open('files.info', 'w')
+        infof.write(' '.join(REPORT_ALIAS) + '\n')
+        for ins in input.keys():
+            print(ins)
+            if ins == 'rmd':
+                continue
+            infof.write(ins + ' ' + ' '.join(input[ins]) + '\n')
+        infof.close()
+        shell("Rscript -e 'rmarkdown::render(\"evaluation-report.Rmd\")'")
+        shell('cp evaluation-report.html {output}')
 
 # reg_roots = expand(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}', zip,
 #                    method=METHODS, params=PARAMS, dataset=DATASETS)
@@ -378,33 +362,44 @@ rule map_stats:
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt')
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapstats-{read}-{mapper}.benchmark.tsv')
     threads: 1
-    shell:
-        """
-        gunzip -c {input} | awk '{{if($10=="*"){{$12=-1}};if($10!="*" && $10==$11){{perf="true"}}else{{perf="false"}};if($10!="*" && $10/$11>=.99){{nn="true"}}else{{nn="false"}};print $12,perf,nn}}' | sort | uniq -c > {output}
-        """
-
-rule deconstruct_vcf_minigraph:
-    input:
-        py='gamToGFApath.py',
-        xg=S3.remote(SROOT + '/minigraph/{params}/{dataset}.minigraph.{params}.xg'),
-        snarls=S3.remote(SROOT + '/minigraph/{params}/map/{dataset}.minigraph.{params}.snarls'),
-        gbwt=S3.remote(expand('{sroot}/minigraph/{{params}}/map/{{dataset}}.minigraph.{{params}}.N{n}.gbwt', sroot=SROOT, n=config['cover_n']))
-    output: 'minigraph/{params}/{dataset}.minigraph.{params}.decon.vcf'
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.minigraph.{params}.deconstruct.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.minigraph.{params}.deconstruct.log')
-    threads: 16
-    params:
-        gfa="temp_decon_{dataset}.minigraph.{params}.gfa",
-        vgaug="temp_decon_{dataset}.minigraph.{params}.vg"
-    singularity:
-        "docker://" + config['vg_docker']
-    shell:
-        """
-        vg view -g {input.xg} > {params.gfa}
-        vg paths -X -x {input.xg} -g {input.gbwt} | vg view -a - | python3 {input.py} >> {params.gfa}
-        vg convert -ga {params.gfa} > {params.vgaug}
-        vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P {CHR} {params.vgaug} > {output} 2> {log}
-        """
+    run:
+        counts = {}
+        ingaf = gzip.open(input[0], 'rb')
+        for line in ingaf:
+            line = line.decode('ascii').rstrip().split('\t')
+            # if mapped, extract mapq and proportion of matches (matches / alignment length)
+            al = 'unmapped'
+            mapq = -1
+            if line[9] != '*':
+                mapq = line[11]
+                if int(line[9]) >= .99 * int(line[10]):
+                    if line[9] == line[10]:
+                        # perfect alignment
+                        al = '100'
+                    else:
+                        # >=99% but not perfect
+                        al = '99'
+                else:
+                    # mapped but lower than 99% match
+                    al = 'lt99'
+            # any indels: alignment length > read length
+            indel = 'NA'
+            if al != 'unmapped':
+                if '+' in line[14] or '-' in line[14]:
+                    indel = 'T'
+                else:
+                    indel = 'F'
+            cid = '{}\t{}\t{}'.format(mapq, al, indel)
+            if cid in counts:
+                counts[cid] += 1
+            else:
+                counts[cid] = 1
+        ingaf.close()
+        outf = open(output[0], 'w')
+        outf.write('reads\tmapq\tmatch\tindel\n')
+        for cid in counts:
+            outf.write(str(counts[cid]) + '\t' + cid  + '\n') 
+        outf.close()
 
 rule deconstruct_vcf_paftools:
     input: S3.remote(SROOT + '/paftools/{params}/{dataset}.paftools.{params}.vcf.bgz')
@@ -415,7 +410,7 @@ rule deconstruct_vcf_paftools:
 
 rule deconstruct_vcf:
     input:
-        xg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg'),
+        xg=xg_input,
         snarls=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.snarls')
     output: '{method}/{params}/{dataset}.{method}.{params}.decon.vcf'
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.deconstruct.benchmark.tsv')
@@ -424,7 +419,7 @@ rule deconstruct_vcf:
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        "vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P {CHR} {input.xg} > {output} 2> {log}"
+        "vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P chr {input.xg} > {output} 2> {log}"
 
 ## Deconstruct variants relative to the reference path
 rule splitalts_deconstructed_vcf:
@@ -772,5 +767,4 @@ rule map_graphaligner:
 # ruleorder: map_graphaligner_gfa > map_graphaligner
 
 # Preference to specific rules if multiple could be used
-ruleorder: deconstruct_vcf_minigraph > deconstruct_vcf
 ruleorder: deconstruct_vcf_paftools > bgzip_vcf
