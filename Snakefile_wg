@@ -474,7 +474,7 @@ rule deconstruct_vcf_gbwt:
         "docker://" + config['vg_docker']
     shell:
         """
-        vg deconstruct -t {threads} -a -r {input.snarls} -gbwt {input.gbwt} -A h1 -A h2 -A CHM -A HG -A NA -P hg38 -P chr {input.xg} > {output} 2> {log}
+        vg deconstruct -t {threads} -a -r {input.snarls} -gbwt {input.gbwt} -P hg38 -P chr {input.xg} > {output} 2> {log}
         """
 
         
