@@ -441,29 +441,30 @@ rule deconstruct_vcf:
 #         vg augment -t {threads} -BFp {params.pg} {params.gaf} > {output}
 #         """
 
-rule augment_gbwt_paths_gfa:
-    input:
-        py='gamToGFApath.py',
-        xg=xg_input,
-        gbwt=gbwt_input
-    output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.withpaths.{n}.vg')
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.augment-paths-{n}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.augment-paths-{n}.log')
-    threads: 8
-    params:
-        gfa="temp_augpaths_{dataset}.{method}.{params}.gfa"
-    singularity:
-        "docker://" + config['vg_docker']
-    shell:
-        """
-        vg view -g {input.xg} > {params.gfa}
-        vg paths -X -x {input.xg} -g {input.gbwt} | vg view -a - | python3 {input.py} >> {params.gfa}
-        vg convert -ga {params.gfa} > {output}
-        """
+# rule augment_gbwt_paths_gfa:
+#     input:
+#         py='gamToGFApath.py',
+#         xg=xg_input,
+#         gbwt=gbwt_input
+#     output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.withpaths.{n}.vg')
+#     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.augment-paths-{n}.benchmark.tsv')
+#     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.augment-paths-{n}.log')
+#     threads: 8
+#     params:
+#         gfa="temp_augpaths_{dataset}.{method}.{params}.gfa"
+#     singularity:
+#         "docker://" + config['vg_docker']
+#     shell:
+#         """
+#         vg view -g {input.xg} > {params.gfa}
+#         vg paths -X -x {input.xg} -g {input.gbwt} | vg view -a - | python3 {input.py} >> {params.gfa}
+#         vg convert -ga {params.gfa} > {output}
+#         """
         
 rule deconstruct_vcf_gbwt:
     input:
-        pg=S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.withpaths.{n}.vg'),
+        xg=xg_input,
+        gbwt=gbwt_input,
         snarls=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.snarls')
     output: '{method}/{params}/{dataset}.{method}.{params}.decon.{n}.vcf'
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.deconstruct-{n}.benchmark.tsv')
@@ -473,7 +474,7 @@ rule deconstruct_vcf_gbwt:
         "docker://" + config['vg_docker']
     shell:
         """
-        vg deconstruct -t {threads} -e -r {input.snarls} -P hg38 -P chr {input.pg} > {output} 2> {log}
+        vg deconstruct -t {threads} -e -a -r {input.snarls} -gbwt {input.gbwt} -A h1 -A h2 -A CHM -A HG -A NA -P hg38 -P chr {input.xg} > {output} 2> {log}
         """
 
         
