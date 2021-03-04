@@ -60,7 +60,7 @@ for exp in config['exp'].split():
 # how to name the graphs in the report. e.g. to simpify the names
 REPORT_ALIAS = expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
 if 'report_alias' in config:
-    REPORT_ALIAS = config['report_alias']
+    REPORT_ALIAS = config['report_alias'].split()
 
 ## if the input graph didn't follow the naming conventions, define "links" in this file
 ## CSV: s3 path, new s3 path (that follows naming conventions)
@@ -382,21 +382,31 @@ rule map_stats:
                 else:
                     # mapped but lower than 99% match
                     al = 'lt99'
-            # any indels: alignment length > read length
+            # any indels or softclips based on the cigar string
             indel = 'NA'
+            softclip = 'NA'
             if al != 'unmapped':
-                if '+' in line[14] or '-' in line[14]:
+                cs = line[14].replace('cs:Z:', '')
+                # remove potential softclips
+                cs_m = cs.rstrip('ATCGN+-').lstrip('+-')
+                if '+' in cs_m or '-' in cs_m:
                     indel = 'T'
                 else:
                     indel = 'F'
-            cid = '{}\t{}\t{}'.format(mapq, al, indel)
+                # look for softclip at end of read
+                cs_e = cs.rstrip('ATCGN')[-1]
+                if cs[0] == '+' or cs[0] == '-' or cs_e == '+' or cs_e == '-':
+                    softclip = 'T'
+                else:
+                    softclip = 'F'
+            cid = '{}\t{}\t{}\t{}'.format(mapq, al, indel, softclip)
             if cid in counts:
                 counts[cid] += 1
             else:
                 counts[cid] = 1
         ingaf.close()
         outf = open(output[0], 'w')
-        outf.write('reads\tmapq\tmatch\tindel\n')
+        outf.write('reads\tmapq\tmatch\tindel\tsoftclip\n')
         for cid in counts:
             outf.write(str(counts[cid]) + '\t' + cid  + '\n') 
         outf.close()
