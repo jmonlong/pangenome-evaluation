@@ -128,20 +128,21 @@ rr_tpl = SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}'
 for ii in range(len(METHODS)):
     if METHODS[ii] != 'vg' and PARAMS != 'linear':
         reg_roots.append(rr_tpl.format(method=METHODS[ii], params=PARAMS[ii], dataset=DATASETS[ii]))
-rule viz:
-    input:
-        rmd='visualization-report.Rmd',
-        bed=config['viz_bed'],
-        vgview=S3.remote(expand('{root}.{region}_c50.dot.svg', root=reg_roots, region=REGIONS)),
-        odgiviz=S3.remote(expand('{root}.{region}_c50.odgi.png', root=reg_roots, region=REGIONS))
-    output: S3.remote(SROOT + '/' + config['viz_html_out'])
-    run:
-        outf = open('files.info', 'w')
-        outf.write('vgview {}\n'.format(' '.join(input.vgview)))
-        outf.write('odgiviz {}\n'.format(' '.join(input.odgiviz)))
-        outf.close()
-        shell("Rscript -e 'rmarkdown::render(\"visualization-report.Rmd\")' files.info {input.bed}")
-        shell("cp visualization-report.html {output}")
+if len(reg_roots) > 0:
+    rule viz:
+        input:
+            rmd='visualization-report.Rmd',
+            bed=config['viz_bed'],
+            vgview=S3.remote(expand('{root}.{region}_c50.dot.svg', root=reg_roots, region=REGIONS)),
+            odgiviz=S3.remote(expand('{root}.{region}_c50.odgi.png', root=reg_roots, region=REGIONS))
+        output: S3.remote(SROOT + '/' + config['viz_html_out'])
+        run:
+            outf = open('files.info', 'w')
+            outf.write('vgview {}\n'.format(' '.join(input.vgview)))
+            outf.write('odgiviz {}\n'.format(' '.join(input.odgiviz)))
+            outf.close()
+            shell("Rscript -e 'rmarkdown::render(\"visualization-report.Rmd\")' files.info {input.bed}")
+            shell("cp visualization-report.html {output}")
 
 ##
 ## Misc
@@ -746,7 +747,8 @@ rule call_novcf:
         "docker://" + config['vg_docker']
     shell:
         """
-        vg call -k {input.pack} -t {threads} -s HG002 --snarls {input.snarls} {input.xg} > {output} 2> {log}
+        CHRP=`vg paths -L -x {input.xg} | grep -e "^chr" -e "^hg18" | awk 'BEGIN{{ORS=" "}}{{print "-p "$0}}'`
+        vg call -k {input.pack} -t {threads} -s HG002 $CHRP --snarls {input.snarls} {input.xg} > {output} 2> {log}
         """
 
 rule call_novcf_gbwt:
@@ -763,7 +765,8 @@ rule call_novcf_gbwt:
         "docker://" + config['vg_docker']
     shell:
         """
-        vg call -k {input.pack} -t {threads} -s HG002 --snarls {input.snarls} --gbwt {input.gbwt} {input.xg} > {output} 2> {log}
+        CHRP=`vg paths -L -x {input.xg} | grep -e "^chr" -e "^hg18" | awk 'BEGIN{{ORS=" "}}{{print "-p "$0}}'`
+        vg call -k {input.pack} -t {threads} -s HG002 $CHRP --snarls {input.snarls} --gbwt {input.gbwt} {input.xg} > {output} 2> {log}
         """
 
 ruleorder: call_novcf_gbwt > call_novcf
