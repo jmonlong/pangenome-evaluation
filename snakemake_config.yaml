@@ -11,7 +11,7 @@ min_k: 29
 min_w: 11
 cover_n: 16
 gbwt_auto: true
-map_cores: 8
+map_cores: 16
 ## other mapping
 mapper_lr: "ga"
 ## regions to visualize

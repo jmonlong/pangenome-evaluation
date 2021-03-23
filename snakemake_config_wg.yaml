@@ -1,7 +1,7 @@
 ## dataset
 dataset: "GRCh38-freeze1"
 ## experiments
-exp: "vg/linear cactus/feb10 cactus/feb10/CHM13-freeze1 minigraph/feb3-paths/GRCh38-freeze1/paths minigraph/feb3/CHM13-freeze1"
+exp: "vg/linear cactus/feb10-fix-decoys cactus/feb10/CHM13-freeze1 minigraph/feb3-paths/GRCh38-freeze1/paths minigraph/feb3-paths/CHM13-freeze1/paths"
 ## s3 root bucket
 s3root: 'vg-k8s/vgamb/wg'
 ## vg mapping
@@ -9,7 +9,7 @@ mapper: "giraffe"
 min_k: 29
 min_w: 11
 cover_n: 16
-map_cores: 8
+map_cores: 16
 ## other mapping
 mapper_lr: "ga"
 ## regions to visualize
@@ -17,7 +17,7 @@ viz_bed: "pangenome-viz-regions-wg.bed"
 ## input s3 links
 s3_input_links: 'input.graphs.s3.links.csv'
 ## alias for reports
-report_alias: 'GRCH38.linear GRCh38.minigraph.cactus CHRM13.minigraph.cactus GRCh38.minigraph CHM13.minigraph'
+report_alias: 'GRCH38.linear GRCh38.minigraph.cactus.fixdecoys CHRM13.minigraph.cactus GRCh38.minigraph CHM13.minigraph'
 ## output
 html_out: "evaluation-report-wg.html"
 viz_html_out: "visualization-report-wg.html"
