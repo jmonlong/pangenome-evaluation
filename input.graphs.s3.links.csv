@@ -36,12 +36,12 @@ cactus/CHM13-freeze1/CHM13-freeze1.cactus.feb10.xg,cactus/feb10/CHM13-freeze1.ca
 cactus/GRCh38-freeze1/GRCh38-freeze1.cactus.feb10.fix.decoys.xg,cactus/feb10-fix-decoys/GRCh38-freeze1.cactus.feb10-fix-decoys.xg
 cactus/GRCh38-freeze1/GRCh38-freeze1.cactus.feb10.fix.decoys.gbwt,cactus/feb10-fix-decoys/map/GRCh38-freeze1.cactus.feb10-fix-decoys.paths.gbwt
 cactus/GRCh38-f1-90/GRCh38-f1-90-mc-mar13.decoys.xg,cactus/mar13-decoys/GRCh38-freeze1.cactus.mar13-decoys.xg
-cactus/GRCh38-f1-90/GRCh38-f1-90-mc-mar13.decoys.gbwt,cactus/mar13-decoys/GRCh38-freeze1.cactus.mar13-decoys.paths.gbwt
+cactus/GRCh38-f1-90/GRCh38-f1-90-mc-mar13.decoys.gbwt,cactus/mar13-decoys/map/GRCh38-freeze1.cactus.mar13-decoys.paths.gbwt
 cactus/GRCh38-f1-90/GRCh38-f1-90-mc-mar22.decoy.xg,cactus/mar22-decoys/GRCh38-freeze1.cactus.mar22-decoys.xg
-cactus/GRCh38-f1-90/GRCh38-f1-90-mc-mar22.decoy.gbwt,cactus/mar22-decoys/GRCh38-freeze1.cactus.mar22-decoys.paths.gbwt
+cactus/GRCh38-f1-90/GRCh38-f1-90-mc-mar22.decoy.gbwt,cactus/mar22-decoys/map/GRCh38-freeze1.cactus.mar22-decoys.paths.gbwt
 cactus/CHM13-f1-90/CHM13-f1-90-mc-mar22.decoys.xg,cactus/mar22-decoys/CHM13-freeze1.cactus.mar22-decoys.xg
-cactus/CHM13-f1-90/CHM13-f1-90-mc-mar22.decoys.gbwt,cactus/mar22-decoys/CHM13-freeze1.cactus.mar22-decoys.paths.gbwt
+cactus/CHM13-f1-90/CHM13-f1-90-mc-mar22.decoys.gbwt,cactus/mar22-decoys/map/CHM13-freeze1.cactus.mar22-decoys.paths.gbwt
 minigraph/CHM13-f1-90/CHM13-f1-90.decoy.xg,minigraph/f1-90-decoys/CHM13-freeze1.minigraph.f1-90-decoys.xg
-minigraph/CHM13-f1-90/CHM13-f1-90.decoy.gbwt,minigraph/f1-90-decoys/CHM13-freeze1.minigraph.f1-90-decoys.paths.gbwt
+minigraph/CHM13-f1-90/CHM13-f1-90.decoy.gbwt,minigraph/f1-90-decoys/map/CHM13-freeze1.minigraph.f1-90-decoys.paths.gbwt
 minigraph/GRCh38-f1-90/GRCh38-f1-90.decoy.xg,minigraph/f1-90-decoys/GRCh38-freeze1.minigraph.f1-90-decoys.xg
-minigraph/GRCh38-f1-90/GRCh38-f1-90.decoy.gbwt,minigraph/f1-90-decoys/GRCh38-freeze1.minigraph.f1-90-decoys.paths.gbwt
+minigraph/GRCh38-f1-90/GRCh38-f1-90.decoy.gbwt,minigraph/f1-90-decoys/map/GRCh38-freeze1.minigraph.f1-90-decoys.paths.gbwt
