@@ -28,6 +28,7 @@ METHODS = []
 PARAMS = []
 DATASETS = []
 SRMAPPERS = []
+REFP = {}
 for exp in config['exp'].split():
     # split "experiment" into method, params. Optional: dataset, gbwt-mode
     # e.g.: vg/linear, cactus/feb1/CHM13-freeze1/paths
@@ -56,6 +57,13 @@ for exp in config['exp'].split():
     if mapper == 'giraffe':
         mapper = 'giraffe{}k{}w{}'.format(config['min_k'], config['min_w'], gbwt_mode)
     SRMAPPERS.append(mapper)
+    # prefix for the reference chromosomes
+    if 'ref_chr_prefix' not in config:
+        REFP[exp[0]] = ''
+        if exp[0] == 'cactus':
+            REFP[exp[0]] = 'GRCh38.'
+    else:
+        REFP[exp[0]] = config['ref_chr_prefix']
 
 # how to name the graphs in the report. e.g. to simpify the names
 REPORT_ALIAS = expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
@@ -763,10 +771,11 @@ rule call_novcf_gbwt:
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-{read}.log')
     singularity:
         "docker://" + config['vg_docker']
+    params:
+        argp=lambda wildcards: ' '.join(['-p ' + REFP[wildcards.method] + cc for cc in CHRS])
     shell:
         """
-        CHRP=`vg paths -L -x {input.xg} | grep -e "^chr" -e "^hg18" | awk 'BEGIN{{ORS=" "}}{{print "-p "$0}}'`
-        vg call -k {input.pack} -t {threads} -s HG002 $CHRP --snarls {input.snarls} --gbwt {input.gbwt} {input.xg} > {output} 2> {log}
+        vg call -k {input.pack} -t {threads} -s HG002 {params.argp} --snarls {input.snarls} --gbwt {input.gbwt} {input.xg} > {output} 2> {log}
         """
 
 ruleorder: call_novcf_gbwt > call_novcf
