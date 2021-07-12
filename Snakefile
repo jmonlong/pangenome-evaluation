@@ -887,14 +887,15 @@ rule index_gbwt_paths:
 rule index_minimizer:
     input:
         xg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg'),
-        gbwt=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gbwt')
+        gbwt=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gbwt'),
+        dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist')
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min')
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-min-k{k}-w{w}-{n}.benchmark.tsv')
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'vg minimizer -k {wildcards.k} -w {wildcards.w} -t {threads} -i {output} -g {input.gbwt} {input.xg}'
+        'vg minimizer -k {wildcards.k} -w {wildcards.w} -t {threads} -i {output} -g {input.gbwt} -d {input.dist} {input.xg}'
 
 rule index_trivial_snarls:
     input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.xg')
