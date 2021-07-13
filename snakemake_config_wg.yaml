@@ -1,7 +1,7 @@
 ## dataset
 dataset: "GRCh38-freeze1"
 ## experiments
-exp: "vg/linear cactus/f1g-90-mc-jul7/GRCh38-freeze1 cactus/mar22-decoys/GRCh38-freeze1 cactus/f1g-90-mc-jul7/CHM13-freeze1 cactus/f1g-90-mc-jul6/CHM13-freeze1 cactus/mar22-decoys/CHM13-freeze1 minigraph/f1-90-decoys/GRCh38-freeze1/paths minigraph/f1-90-decoys/CHM13-freeze1/paths"
+exp: "vg/linear cactus/f1g-90-mc-jul7/GRCh38-freeze1 cactus/f1g-90-mc-jul7/CHM13-freeze1 cactus/f1g-90-mc-jul6/CHM13-freeze1 minigraph/f1-90-decoys/GRCh38-freeze1/paths minigraph/f1-90-decoys/CHM13-freeze1/paths"
 ## s3 root bucket
 s3root: 'vg-k8s/vgamb/wg'
 ## vg mapping
@@ -17,7 +17,7 @@ viz_bed: "pangenome-viz-regions-wg.bed"
 ## input s3 links
 s3_input_links: 'input.graphs.s3.links.csv'
 ## alias for reports
-report_alias: 'GRCH38.linear GRCh38.minigraph.cactus GRCh38.minigraph.cactus.mar22 CHM13.minigraph.cactus CHM13.minigraph.cactus.jul6 CHM13.minigraph.cactus.mar22 GRCh38.minigraph CHM13.minigraph'
+report_alias: 'GRCH38.linear GRCh38.minigraph.cactus CHM13.minigraph.cactus CHM13.minigraph.cactus.jul6 GRCh38.minigraph CHM13.minigraph'
 ## output
 html_out: "evaluation-report-wg.html"
 viz_html_out: "visualization-report-wg.html"
