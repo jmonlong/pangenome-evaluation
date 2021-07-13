@@ -642,14 +642,15 @@ rule index_gbwt_paths:
 rule index_minimizer:
     input:
         xg=xg_input,
-        gbwt=gbwt_input
+        gbwt=gbwt_input,
+        dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist')
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min')
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-min-k{k}-w{w}-{n}.benchmark.tsv')
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        'vg minimizer -k {wildcards.k} -w {wildcards.w} -t {threads} -i {output} -g {input.gbwt} {input.xg}'
+        'vg minimizer -k {wildcards.k} -w {wildcards.w} -t {threads} -g {input.gbwt} -d {input.dist} -o {output} {input.xg}'
 
 rule index_trivial_snarls:
     input: xg_input
