@@ -215,6 +215,23 @@ rule vg_linear:
         rm {params.tmp_vg}
         """
 
+rule vg_linear_chm13:
+    output: S3.remote(SROOT + '/vg/linear/CHM13-freeze1.vg.linear.xg')
+    threads: 1
+    params:
+        tmp_vg="chm13.draft_v1.1.vg.linear.vg",
+        tmp_fa="chm13.draft_v1.1.fasta"
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        """
+        wget https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/chm13.draft_v1.1.fasta.gz
+        gunzip -c chm13.draft_v1.1.fasta.gz > {params.tmp_fa}
+        vg construct -t {threads} -r {params.tmp_fa} > {params.tmp_vg}
+        vg index -p -t {threads} -x {output} {params.tmp_vg}
+        rm {params.tmp_vg} {params.tmp_fa}
+        """
+
 rule prepare_hg38_chrs_fa:
     input:
         fa=S3.remote('s3://vg-k8s/users/jmonlong/references/hg38.fa'),
