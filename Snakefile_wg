@@ -56,6 +56,8 @@ for exp in config['exp'].split():
     mapper=config['mapper']
     if mapper == 'giraffe':
         mapper = 'giraffe{}k{}w{}'.format(config['min_k'], config['min_w'], gbwt_mode)
+    if mapper == 'vgmap':
+        mapper = 'vgmap{}'.format(gbwt_mode)
     SRMAPPERS.append(mapper)
     # prefix for the reference chromosomes
     if 'ref_chr_prefix' not in config:
@@ -724,14 +726,14 @@ rule prune_vg:
 
 rule index_gcsa:
     input:
-        vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.paths.vg'),
-        nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.paths.node_mapping')
-    output:
-        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa'),
-        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa.lcp')
+        vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{n}.vg'),
+        nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.node_mapping')
+    output:.
+        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gcsa'),
+        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gcsa.lcp')
     threads: 16
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gcsa.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gcsa.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gcsa-{n}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gcsa-{n}.log')
     params:
         tmp_dir="temp_gsca_{method}_{params}_{dataset}"
     singularity:
@@ -778,12 +780,12 @@ rule map_vgmap:
         f1=r1_input,
         f2=r2_input,
         xg=xg_input,
-        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa'),
-        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa.lcp')
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.vgmap.gaf'
+        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gcsa'),
+        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gcsa.lcp')
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.vgmap{n}.gaf'
     threads: config['map_cores']
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-vgmap-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-vgmap-{read}.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-vgmap{n}-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-vgmap{n}-{read}.log')
     singularity:
         "docker://" + config['vg_docker']
     shell:
