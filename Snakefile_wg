@@ -728,7 +728,7 @@ rule index_gcsa:
     input:
         vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{n}.vg'),
         nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.node_mapping')
-    output:.
+    output:
         gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gcsa'),
         gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gcsa.lcp')
     threads: 16
