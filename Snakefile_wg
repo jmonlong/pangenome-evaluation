@@ -701,6 +701,49 @@ rule index_distance:
     shell:
         'vg index -t {threads} -j {output} -s {input.snarls} {input.xg}'
 
+rule prune_vg:
+    input:
+        xg=xg_input,
+        gbwt=gbwt_input
+    output:
+        vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{n}.vg'),
+        nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.node_mapping')
+    threads: 1
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.{n}.mapvg-prune.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.{n}.mapvg-prune.log')
+    params:
+        tmp_vg='tmp.{dataset}.{method}.{params}.vg'
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        """
+        vg convert -v {input.xg} > {params.tmp_vg}
+        vg prune -t {threads} -u -g {input.gbwt} -m {output.nodemapping} {params.tmp_vg} > {output.vg} 2> {log}
+        rm {params.tmp_vg}
+        """
+
+rule index_gcsa:
+    input:
+        vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.paths.vg'),
+        nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.paths.node_mapping')
+    output:
+        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa'),
+        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa.lcp')
+    threads: 16
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gcsa.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gcsa.log')
+    params:
+        tmp_dir="temp_gsca_{method}_{params}_{dataset}"
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        """
+        mkdir -p {params.tmp_dir}
+        vg index --temp-dir {params.tmp_dir} -p -t {threads} -f {input.nodemapping} -g {output.gcsa} {input.vg} 2> {log}
+        rm -r {params.tmp_dir}
+        """
+
+        
 # map reads to the graph using giraffe
 def r1_input(wildcards):
     if wildcards.read == READS_SR_HC:
@@ -728,6 +771,23 @@ rule map_giraffe:
         "docker://" + config['vg_docker']
     shell:
         'vg giraffe -o gaf -p -t {threads} -b fast -m {input.min} -d {input.dist} --gbwt-name {input.gbwt} -x {input.xg} -N {wildcards.read} -f {input.f1} -f {input.f2} > {output} 2> {log}'
+
+# map reads to the graph using map
+rule map_vgmap:
+    input:
+        f1=r1_input,
+        f2=r2_input,
+        xg=xg_input,
+        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa'),
+        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.gcsa.lcp')
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.vgmap.gaf'
+    threads: config['map_cores']
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-vgmap-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-vgmap-{read}.log')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        'vg map --gaf -t {threads} -x {input.xg} -g {input.gcsa} -f {input.f1} -f {input.f2} -N {wildcards.read} > {output} 2> {log}'
 
 # pack coverage from the reads
 rule pack_ga:
