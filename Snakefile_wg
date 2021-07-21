@@ -742,7 +742,8 @@ rule prune_vg:
     shell:
         """
         vg convert -v {input.xg} > {params.tmp_vg}
-        vg prune -t {threads} -M {wildcards.m} -m {output.nodemapping} {params.tmp_vg} > {output.vg} 2> {log}
+        vg prune -t {threads} -M {wildcards.m} {params.tmp_vg} > {output.vg} 2> {log}
+        echo empty > {output.nodemapping}
         rm {params.tmp_vg}
         """
 
