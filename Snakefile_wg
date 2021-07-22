@@ -727,11 +727,8 @@ rule prune_vg_gbwt:
         """
 
 rule prune_vg:
-    input:
-        xg=xg_input
-    output:
-        vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{m}M.vg'),
-        nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{m}M.node_mapping')
+    input: xg_input
+    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{m}M.vg')
     threads: 1
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.{m}M.mapvg-prune.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.{m}M.mapvg-prune.log')
@@ -741,24 +738,22 @@ rule prune_vg:
         "docker://" + config['vg_docker']
     shell:
         """
-        vg convert -v {input.xg} > {params.tmp_vg}
-        vg prune -t {threads} -M {wildcards.m} {params.tmp_vg} > {output.vg} 2> {log}
-        echo empty > {output.nodemapping}
+        vg convert -v {input} > {params.tmp_vg}
+        vg prune -t {threads} -M {wildcards.m} {params.tmp_vg} > {output} 2> {log}
         rm {params.tmp_vg}
         """
 
-ruleorder: prune_vg > prune_vg_gbwt
-        
-rule index_gcsa:
+
+rule index_gcsa_gbwt:
     input:
-        vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{n}.vg'),
-        nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.node_mapping')
+        vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{n}N.vg'),
+        nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}N.node_mapping')
     output:
-        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gcsa'),
-        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}.gcsa.lcp')
+        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}N.gcsa'),
+        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}N.gcsa.lcp')
     threads: 16
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gcsa-{n}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gcsa-{n}.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gcsa-{n}N.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gcsa-{n}N.log')
     params:
         tmp_dir="temp_gsca_{method}_{params}_{dataset}"
     singularity:
@@ -767,6 +762,25 @@ rule index_gcsa:
         """
         mkdir -p {params.tmp_dir}
         vg index --temp-dir {params.tmp_dir} -p -t {threads} -f {input.nodemapping} -g {output.gcsa} {input.vg} 2> {log}
+        rm -r {params.tmp_dir}
+        """
+
+rule index_gcsa:
+    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{m}M.vg')
+    output:
+        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{m}M.gcsa'),
+        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{m}M.gcsa.lcp')
+    threads: 16
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gcsa-{m}M.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gcsa-{m}M.log')
+    params:
+        tmp_dir="temp_gsca_{method}_{params}_{dataset}"
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        """
+        mkdir -p {params.tmp_dir}
+        vg index --temp-dir {params.tmp_dir} -p -t {threads} -g {output.gcsa} {input} 2> {log}
         rm -r {params.tmp_dir}
         """
 
