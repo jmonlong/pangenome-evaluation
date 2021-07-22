@@ -358,6 +358,16 @@ def xg_input(wildcards):
         return S3.remote(SROOT + '/' + in_path)
 
 def gbwt_input(wildcards):
+    in_path = '{method}/{params}/map/{dataset}.{method}.{params}.{n}.gbwt'.format(method=wildcards.method,
+                                                                                  params=wildcards.params,
+                                                                                  dataset=wildcards.dataset,
+                                                                                  n=wildcards.n)
+    if in_path in in_ln:
+        return S3.remote(SROOT + '/' + in_ln[in_path])
+    else:
+        return S3.remote(SROOT + '/' + in_path)
+    
+def gbwt_input_n(wildcards):
     in_path = '{method}/{params}/map/{dataset}.{method}.{params}.{n}N.gbwt'.format(method=wildcards.method,
                                                                                    params=wildcards.params,
                                                                                    dataset=wildcards.dataset,
@@ -504,9 +514,9 @@ rule deconstruct_vcf_gbwt:
         xg=xg_input,
         gbwt=gbwt_input,
         snarls=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.snarls')
-    output: '{method}/{params}/{dataset}.{method}.{params}.decon.{n}N.vcf'
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.deconstruct-{n}N.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.deconstruct-{n}N.log')
+    output: '{method}/{params}/{dataset}.{method}.{params}.decon.{n}.vcf'
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.deconstruct-{n}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.deconstruct-{n}.log')
     threads: 8
     singularity:
         "docker://" + config['vg_docker']
@@ -550,7 +560,7 @@ rule extract_region_gfa:
     input:
         xg=xg_input,
         gbwt=gbwt_input
-    output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{n}N.{path}-{start}-{end}_c{context}.gfa'),
+    output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{n}.{path}-{start}-{end}_c{context}.gfa'),
     singularity:
         "docker://" + config['vg_docker']
     shell:
@@ -663,9 +673,9 @@ rule index_minimizer:
         xg=xg_input,
         gbwt=gbwt_input,
         dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist')
-    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}N.min')
+    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min')
     threads: 16
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-min-k{k}-w{w}-{n}N.benchmark.tsv')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-min-k{k}-w{w}-{n}.benchmark.tsv')
     singularity:
         "docker://" + config['vg_docker']
     shell:
@@ -706,7 +716,7 @@ rule index_distance:
 rule prune_vg_gbwt:
     input:
         xg=xg_input,
-        gbwt=gbwt_input
+        gbwt=gbwt_input_n
     output:
         vg=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.pruned.{n}N.vg'),
         nodemapping=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{n}N.node_mapping')
@@ -801,13 +811,13 @@ rule map_giraffe:
         f1=r1_input,
         f2=r2_input,
         xg=xg_input,
-        min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}N.min'),
+        min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min'),
         dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
         gbwt=gbwt_input
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}N.gaf'
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.gaf'
     threads: config['map_cores']
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}N-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}N-{read}.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-{read}.log')
     singularity:
         "docker://" + config['vg_docker']
     shell:
@@ -880,14 +890,14 @@ rule call_novcf:
 
 rule call_novcf_gbwt:
     input:
-        pack=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}N.pack'),
+        pack=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.pack'),
         xg=xg_input,
         gbwt=gbwt_input,
         snarls=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.snarls')
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}N.call.vcf'
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.call.vcf'
     threads: 8
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}N-call-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}N-call-{read}.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-{read}.log')
     singularity:
         "docker://" + config['vg_docker']
     params:
