@@ -737,10 +737,11 @@ rule prune_vg:
 
 def list_pruned_cmps(wildcards):
     checkpoint_output = checkpoints.chunk_components.get(**wildcards).output[0]
-    return expand(S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.cmps/cmp_{cmp}.pruned.{m}M.vg'),
-                  method=wildcards.method, params=wildcards.params, dataset=wildcards.dataset,
-                  m=wildcards.m,
-                  cmp=glob_wildcards(os.path.join(checkpoint_output, "cmp_{cmp}.vg")).cmp)
+    return S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.cmps/cmp_{cmp}.pruned.{m}M.vg',
+                            method=wildcards.method, params=wildcards.params, dataset=wildcards.dataset,
+                            m=wildcards.m,
+                            cmp=glob_wildcards(os.path.join(checkpoint_output, "cmp_{cmp}.vg")).cmp))
+
 rule index_gcsa:
     input: list_pruned_cmps
     output:
