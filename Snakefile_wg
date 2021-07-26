@@ -723,7 +723,7 @@ checkpoint chunk_components:
         """
         mkdir -p {output.dir}
         vg chunk -C -t {threads} -b {output.dir}/cmp -x {input}
-        cd {output.dir}/cmp
+        cd {output.dir}
         rm -f tomerge.txt cmp_others.vg
         for ff in *vg; do vg stats -l $ff | awk -v ff=$ff '{{if($2<100000){{print ff}}}}' >> tomerge.txt; done
         for ff in `cat tomerge.txt`; do vg convert -v $ff >> cmp_others.vg; done
