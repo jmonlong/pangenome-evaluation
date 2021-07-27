@@ -938,7 +938,7 @@ rule map_graphaligner_gfa_conv:
     singularity: "docker://" + config['vg_docker']
     shell:
         """
-        vg mod -X 32 {input} | vg view -g - | awk 'BEGIN{{OFS="\t"}}{{if($1=="L"){{$6="0M"}};print $0}}' > {output}
+        vg convert -v {input} | vg mod -X 32 - | vg view -g - | awk 'BEGIN{{OFS="\t"}}{{if($1=="L"){{$6="0M"}};print $0}}' > {output}
         """
 
 rule map_graphaligner:
