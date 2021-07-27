@@ -938,7 +938,7 @@ rule map_graphaligner_gfa_conv:
     singularity: "docker://" + config['vg_docker']
     shell:
         """
-        vg convert -v {input} | vg mod -X 32 - | vg view -g - | awk 'BEGIN{{OFS="\t"}}{{if($1=="L"){{$6="0M"}};print $0}}' > {output}
+        vg view -g {input} | awk 'BEGIN{{OFS="\t"}}{{if($1=="L"){{$6="0M"}};print $0}}' > {output}
         """
 
 rule map_graphaligner:
@@ -949,7 +949,7 @@ rule map_graphaligner:
     threads: config['map_cores']
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-{read}.log')
-    singularity: 'docker://quay.io/biocontainers/graphaligner:1.0.13--he1c1bb9_0'
+    singularity: 'https://depot.galaxyproject.org/singularity/graphaligner:1.0.13--he1c1bb9_0'
     shell: "GraphAligner -g {input.gfa} -f {input.fastq} -a {output} -t {threads} -x vg 2> {log}"
 
 # rule map_graphaligner_gfa:
