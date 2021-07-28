@@ -936,21 +936,34 @@ rule map_graphaligner_gfa_conv:
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-gfaconv.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-gfaconv.log')
     singularity: "docker://" + config['vg_docker']
+    threads: 4
     shell:
-        """
-        vg view -g {input} | awk 'BEGIN{{OFS="\t"}}{{if($1=="L"){{$6="0M"}};print $0}}' > {output}
-        """
+       """
+       vg convert -t {threads} -f {input} | awk 'BEGIN{{OFS="\t"}}{{if($1=="L"){{$6="0M"}};print $0}}' > {output}
+       """
 
 rule map_graphaligner:
     input:
         fastq=S3.remote(SROOT + '/reads/{read}.fastq.gz'),
         gfa='for_graph_aligner.{dataset}.{method}.{params}.gfa'
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gam'
     threads: config['map_cores']
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-{read}.log')
-    singularity: 'https://depot.galaxyproject.org/singularity/graphaligner:1.0.13--he1c1bb9_0'
-    shell: "GraphAligner -g {input.gfa} -f {input.fastq} -a {output} -t {threads} -x vg 2> {log}"
+    singularity: 'quay.io/biocontainers/graphaligner:1.0.8--he1c1bb9_0'
+    shell: "GraphAligner -g {input.gfa} -f {input.fastq} -a {output} -t {threads} 2> {log}"
+
+rule gam_to_gaf:
+    input:
+        gam='{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gam',
+        xg=xg_input
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-gamtogaf.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-gamtogaf.log')
+    singularity: "docker://" + config['vg_docker']
+    threads: 4
+    shell: "vg convert -t {threads} -G {input.gam} {input.xg} > {output} 2> {log}"
+            
 
 # rule map_graphaligner_gfa:
 #     input:
