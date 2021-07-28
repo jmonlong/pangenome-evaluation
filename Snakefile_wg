@@ -950,7 +950,7 @@ rule map_graphaligner:
     threads: config['map_cores']
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-{read}.log')
-    singularity: 'quay.io/biocontainers/graphaligner:1.0.8--he1c1bb9_0'
+    singularity: 'docker://quay.io/biocontainers/graphaligner:1.0.8--he1c1bb9_0'
     shell: "GraphAligner -g {input.gfa} -f {input.fastq} -a {output} -t {threads} 2> {log}"
 
 rule gam_to_gaf:
