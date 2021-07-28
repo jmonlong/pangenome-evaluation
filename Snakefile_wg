@@ -958,8 +958,8 @@ rule gam_to_gaf:
         gam='{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gam',
         xg=xg_input
     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf'
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-gamtogaf.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-gamtogaf.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.graphaligner-gamtogaf.{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.graphaligner-gamtogaf.{read}.log')
     singularity: "docker://" + config['vg_docker']
     threads: 4
     shell: "vg convert -t {threads} -G {input.gam} {input.xg} > {output} 2> {log}"
