@@ -424,7 +424,13 @@ rule map_stats:
             indel = 'NA'
             softclip = 'NA'
             if al != 'unmapped':
-                cs = line[14].replace('cs:Z:', '')
+                cs = ''
+                ii = 12
+                while cs == '' and ii < len(line):
+                    if line[ii][:3] == 'cs:':
+                        cs = line[ii]
+                    ii += 1
+                cs = cs.replace('cs:Z:', '')
                 # remove potential softclips
                 cs_m = cs.rstrip('ATCGN+-').lstrip('+-')
                 if '+' in cs_m or '-' in cs_m:
