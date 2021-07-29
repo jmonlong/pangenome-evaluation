@@ -102,8 +102,8 @@ def info_file_eval(wildcards):
         ifs['map'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_SR_LC + '.{mapper}.stats.txt', zip,
                                       method=METHODS, params=PARAMS, dataset=DATASETS, mapper=SRMAPPERS))
     if 'lrmap' in eval_mods:
-        ifs['maplr'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.stats.txt', zip,
-                                        method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_LR_LC, mapper=config['mapper_lr']))
+        ifs['maplr'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_LR_LC + '.' + config['mapper_lr'] + '.stats.txt', zip,
+                                        method=METHODS, params=PARAMS, dataset=DATASETS))
     if 'srcall' in eval_mods:
         ifs['srcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf.bgz', zip,
                                          method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
