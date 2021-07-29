@@ -402,19 +402,23 @@ if('map' %in% rownames(files.info)){
 ```{r mapstats.lr}
 if('maplr' %in% rownames(files.info)){
   mapq.df = lapply(colnames(files.info), function(exp){
-    mapq.r = read.table(files.info['maplr', exp])
-    colnames(mapq.r) = c('reads', 'mapq', 'perfect', 'match99')
-    mapq.r %>% mutate(graph=exp, perfect=as.logical(perfect), match99=as.logical(match99))
+    mapq.r = read.table(files.info['map', exp], as.is=TRUE, header=TRUE)
+    ## colnames(mapq.r) = c('reads', 'mapq', 'perfect', 'match99')
+    mapq.r %>% mutate(graph=exp, perfect=match=='100',
+                      match99=match %in% c('100', '99'))
   }) %>% bind_rows
-
+  
   mapq.df %>% group_by(graph) %>%
     summarize(all=sum(reads),
-              unmapped=round(sum(reads[mapq==-1])/all, 4),
-              mapq.0=round(sum(reads[mapq==0])/all, 4),
-              mapq.60=round(sum(reads[mapq>=60])/all, 4),
-              align_99perc=round(sum(reads[match99])/all, 4),
-              perfect_align=round(sum(reads[perfect])/all, 4)) %>%
-    arrange(desc(align_99perc)) %>% 
+              unmapped=round(sum(reads[which(mapq==-1)])/all, 4),
+              mapq.0=round(sum(reads[which(mapq==0)])/all, 4),
+              mapq.geq60=round(sum(reads[which(mapq>=60)])/all, 4),
+              perfect.align=round(sum(reads[which(perfect)])/all, 4),
+              align.99perc=round(sum(reads[which(match99)])/all, 4),
+              noindel=round(sum(reads[which(!indel)])/all, 4),
+              noindel.nosoftclip=round(sum(reads[which(!indel & !softclip)])/all, 4)) %>%
+    dplyr::select(-all) %>% 
+    arrange(unmapped, desc(perfect.align)) %>% 
     datatable(filter='none', options=list(paging=FALSE, searching=FALSE, info=FALSE))
 } else {
   cat('Not available\n')
