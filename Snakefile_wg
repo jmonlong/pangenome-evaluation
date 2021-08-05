@@ -19,6 +19,7 @@ CHRS += ['chrX', 'chrY', 'chrM']
 READS_SR_LC = 'HG002_5M' # short-reads, low-coverage
 READS_SR_HC = 'HG002' # short-reads, high-coverage (e.g. for variant calling)
 READS_LR_LC= 'HG002-SequelII-merged_15kb_20kb-pbmm2.ss001' # CSS reads, low-coverage
+READS_LR_HC= 'HG002-SequelII-merged_15kb_20kb-pbmm2' # CSS reads, 10x coverage
 
 # methods where the default should be to use embedded paths when mapping with giraffe
 EMB_PATH_METHS = ['cactus', 'seqwish', 'vg']
@@ -107,6 +108,9 @@ def info_file_eval(wildcards):
     if 'srcall' in eval_mods:
         ifs['srcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf.bgz', zip,
                                          method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
+    if 'lrcall' in eval_mods:
+        ifs['lrcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_LR_HC + '.' + config['mapper_lr'] + '.call.vcf.bgz', zip,
+                                         method=METHODS, params=PARAMS, dataset=DATASETS))
     if 'snarl' in eval_mods:
         ifs['snarl'] = S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.dist-stats.tsv.gz', zip,
                                          method=METHODS, params=PARAMS, dataset=DATASETS))
