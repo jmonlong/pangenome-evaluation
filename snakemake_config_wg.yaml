@@ -1,9 +1,9 @@
 ## dataset
 dataset: "GRCh38-freeze1"
 ## experiments
-exp: "vg/linear cactus/f1g-90-mc-jul7 cactus/f1g-90-mc-jul7-gaffix cactus/f1g-90-mc-jul7/CHM13-freeze1 minigraph/f1g-90/GRCh38-freeze1/paths minigraph/f1g-90/CHM13-freeze1/paths vg/linear/CHM13-freeze1"
+exp: "vg/linear cactus/f1g-90-mc-jul7-gfaffix cactus/f1g-90-mc-jul7/CHM13-freeze1 minigraph/f1g-90/GRCh38-freeze1/paths minigraph/f1g-90/CHM13-freeze1/paths vg/linear/CHM13-freeze1"
 ## alias for reports
-report_alias: 'GRCH38.linear GRCh38.minigraph.cactus.jul7 GRCh38.minigraph.cactus.jul7.gaffix CHM13.minigraph.cactus.jul7 GRCh38.minigraph CHM13.minigraph CHM13.linear'
+report_alias: 'GRCH38.linear GRCh38.minigraph.cactus.jul7.gfaffix CHM13.minigraph.cactus.jul7 GRCh38.minigraph CHM13.minigraph CHM13.linear'
 ## s3 root bucket
 s3root: 'vg-k8s/vgamb/wg'
 ## vg mapping
