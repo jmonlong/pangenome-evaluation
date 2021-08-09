@@ -147,8 +147,8 @@ if len(reg_roots) > 0:
         input:
             rmd='visualization-report.Rmd',
             bed=config['viz_bed'],
-            vgview=S3.remote(expand('{root}.{region}_c50.dot.svg', root=reg_roots, region=REGIONS)),
-            odgiviz=S3.remote(expand('{root}.{region}_c50.odgi.png', root=reg_roots, region=REGIONS))
+            vgview=S3.remote(expand('{root}.{region}_c20.dot.svg', root=reg_roots, region=REGIONS)),
+            odgiviz=S3.remote(expand('{root}.{region}_c20.odgi.png', root=reg_roots, region=REGIONS))
         output: S3.remote(SROOT + '/' + config['viz_html_out'])
         run:
             outf = open('files.info', 'w')
