@@ -76,10 +76,15 @@ if 'report_alias' in config:
 ## if the input graph didn't follow the naming conventions, define "links" in this file
 ## CSV: s3 path, new s3 path (that follows naming conventions)
 in_ln = {}
+in_ln_pref = {}
 if 's3_input_links' in config:
     s3ln = pd.read_csv(config['s3_input_links'], header=None)
     for ii in range(len(s3ln)):
-        in_ln[s3ln[1][ii]] = s3ln[0][ii]
+        link_path = s3ln[1][ii]
+        true_path = s3ln[0][ii]
+        in_ln[link_path] = true_path
+        if '.xg' in true_path:
+            in_ln_pref[link_path.rstrip('xg')] = true_path.rstrip('xg')
 
 ## Regions to visualize
 regs = pd.read_csv(config['viz_bed'], sep='\t', header=None)
@@ -366,8 +371,13 @@ def gbwt_input(wildcards):
                                                                                   params=wildcards.params,
                                                                                   dataset=wildcards.dataset,
                                                                                   n=wildcards.n)
+    other_path = '{method}/{params}/map/{dataset}.{method}.{params}.gbwt'.format(method=wildcards.method,
+                                                                                  params=wildcards.params,
+                                                                                  dataset=wildcards.dataset)
     if in_path in in_ln:
         return S3.remote(SROOT + '/' + in_ln[in_path])
+    elif other_path.rstrip('xg') in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[other_path.rstrip('xg')] + 'gbwt')
     else:
         return S3.remote(SROOT + '/' + in_path)
     
@@ -380,7 +390,35 @@ def gbwt_input_n(wildcards):
         return S3.remote(SROOT + '/' + in_ln[in_path])
     else:
         return S3.remote(SROOT + '/' + in_path)
-    
+
+def dist_input(wildcards):
+    in_path = '{method}/{params}/map/{dataset}.{method}.{params}.dist'.format(method=wildcards.method,
+                                                                              params=wildcards.params,
+                                                                              dataset=wildcards.dataset)
+    if in_path in in_ln:
+        return S3.remote(SROOT + '/' + in_ln[in_path])
+    elif in_path.rstrip('xg') in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[in_path.rstrip('xg')] + 'dist')
+    else:
+        return S3.remote(SROOT + '/' + in_path)
+
+def min_input(wildcards):
+    in_path = '{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min'.format(method=wildcards.method,
+                                                                                           params=wildcards.params,
+                                                                                           dataset=wildcards.dataset,
+                                                                                           k=wildcards.k,
+                                                                                           w=wildcards.w,
+                                                                                           n=wildcards.n)
+    other_path = '{method}/{params}/map/{dataset}.{method}.{params}.min'.format(method=wildcards.method,
+                                                                                           params=wildcards.params,
+                                                                                           dataset=wildcards.dataset)
+    if in_path in in_ln:
+        return S3.remote(SROOT + '/' + in_ln[in_path])
+    elif other_path.rstrip('xg') in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[other_path.rstrip('xg')] + 'min')
+    else:
+        return S3.remote(SROOT + '/' + in_path)
+
 rule vg_stats:
     input: xg_input
     output: S3.remote(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.vgstats.txt')
@@ -545,7 +583,7 @@ rule splitalts_deconstructed_vcf:
         "bcftools norm -m - {input} > {output}"
     
 rule dist_stats:
-    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
+    input: dist_input
     output: '{method}/{params}/{dataset}.{method}.{params}.dist-stats.tsv'
     singularity:
         "docker://" + config['vg_docker']
@@ -682,7 +720,7 @@ rule index_minimizer:
     input:
         xg=xg_input,
         gbwt=gbwt_input,
-        dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist')
+        dist=dist_input
     output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min')
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-min-k{k}-w{w}-{n}.benchmark.tsv')
@@ -838,8 +876,8 @@ rule map_giraffe:
         f1=r1_input,
         f2=r2_input,
         xg=xg_input,
-        min=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.k{k}.w{w}.{n}.min'),
-        dist=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.dist'),
+        min=min_input,
+        dist=dist_input,
         gbwt=gbwt_input
     output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.gaf'
     threads: config['map_cores']
