@@ -376,8 +376,8 @@ def gbwt_input(wildcards):
                                                                                   dataset=wildcards.dataset)
     if in_path in in_ln:
         return S3.remote(SROOT + '/' + in_ln[in_path])
-    elif other_path.rstrip('xg') in in_ln_pref:
-        return S3.remote(SROOT + '/' + in_ln_pref[other_path.rstrip('xg')] + 'gbwt')
+    elif other_path.rstrip('gbwt') in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[other_path.rstrip('gbwt')] + 'gbwt')
     else:
         return S3.remote(SROOT + '/' + in_path)
     
@@ -397,8 +397,8 @@ def dist_input(wildcards):
                                                                               dataset=wildcards.dataset)
     if in_path in in_ln:
         return S3.remote(SROOT + '/' + in_ln[in_path])
-    elif in_path.rstrip('xg') in in_ln_pref:
-        return S3.remote(SROOT + '/' + in_ln_pref[in_path.rstrip('xg')] + 'dist')
+    elif in_path.rstrip('dist') in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[in_path.rstrip('dist')] + 'dist')
     else:
         return S3.remote(SROOT + '/' + in_path)
 
@@ -414,8 +414,8 @@ def min_input(wildcards):
                                                                                            dataset=wildcards.dataset)
     if in_path in in_ln:
         return S3.remote(SROOT + '/' + in_ln[in_path])
-    elif other_path.rstrip('xg') in in_ln_pref:
-        return S3.remote(SROOT + '/' + in_ln_pref[other_path.rstrip('xg')] + 'min')
+    elif other_path.rstrip('min') in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[other_path.rstrip('min')] + 'min')
     else:
         return S3.remote(SROOT + '/' + in_path)
 
