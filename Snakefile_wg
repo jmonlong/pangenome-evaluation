@@ -366,18 +366,22 @@ def xg_input(wildcards):
     else:
         return S3.remote(SROOT + '/' + in_path)
 
+def pref_path(wildcards):
+    pref_path = '{method}/{params}/{dataset}.{method}.{params}.'.format(method=wildcards.method,
+                                                                        params=wildcards.params,
+                                                                        dataset=wildcards.dataset)
+    return pref_path
+    
+    
 def gbwt_input(wildcards):
     in_path = '{method}/{params}/map/{dataset}.{method}.{params}.{n}.gbwt'.format(method=wildcards.method,
                                                                                   params=wildcards.params,
                                                                                   dataset=wildcards.dataset,
                                                                                   n=wildcards.n)
-    other_path = '{method}/{params}/map/{dataset}.{method}.{params}.gbwt'.format(method=wildcards.method,
-                                                                                  params=wildcards.params,
-                                                                                  dataset=wildcards.dataset)
     if in_path in in_ln:
         return S3.remote(SROOT + '/' + in_ln[in_path])
-    elif other_path.rstrip('gbwt') in in_ln_pref:
-        return S3.remote(SROOT + '/' + in_ln_pref[other_path.rstrip('gbwt')] + 'gbwt')
+    elif pref_path(wildcards) in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[pref_path(wildcards)] + 'gbwt')
     else:
         return S3.remote(SROOT + '/' + in_path)
     
@@ -397,8 +401,8 @@ def dist_input(wildcards):
                                                                               dataset=wildcards.dataset)
     if in_path in in_ln:
         return S3.remote(SROOT + '/' + in_ln[in_path])
-    elif in_path.rstrip('dist') in in_ln_pref:
-        return S3.remote(SROOT + '/' + in_ln_pref[in_path.rstrip('dist')] + 'dist')
+    elif pref_path(wildcards) in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[pref_path(wildcards)] + 'dist')
     else:
         return S3.remote(SROOT + '/' + in_path)
 
@@ -409,13 +413,10 @@ def min_input(wildcards):
                                                                                            k=wildcards.k,
                                                                                            w=wildcards.w,
                                                                                            n=wildcards.n)
-    other_path = '{method}/{params}/map/{dataset}.{method}.{params}.min'.format(method=wildcards.method,
-                                                                                           params=wildcards.params,
-                                                                                           dataset=wildcards.dataset)
     if in_path in in_ln:
         return S3.remote(SROOT + '/' + in_ln[in_path])
-    elif other_path.rstrip('min') in in_ln_pref:
-        return S3.remote(SROOT + '/' + in_ln_pref[other_path.rstrip('min')] + 'min')
+    elif pref_path(wildcards) in in_ln_pref:
+        return S3.remote(SROOT + '/' + in_ln_pref[pref_path(wildcards)] + 'min')
     else:
         return S3.remote(SROOT + '/' + in_path)
 
