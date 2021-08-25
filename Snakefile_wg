@@ -782,29 +782,29 @@ checkpoint chunk_components:
 
 rule prune_vg:
     input: '{dataset}.{method}.{params}.cmps/cmp_{cmp}.vg'
-    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.cmps/cmp_{cmp}.pruned.{m}M.vg')
+    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.cmps/cmp_{cmp}.pruned.{k}k.vg')
     threads: 1
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.cmp{cmp}.{m}M.mapvg-prune.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.cmp{cmp}.{m}M.mapvg-prune.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.cmp{cmp}.{k}k.mapvg-prune.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.cmp{cmp}.{k}k.mapvg-prune.log')
     singularity:
         "docker://" + config['vg_docker']
-    shell: "vg prune -t {threads} -M {wildcards.m} {input} > {output} 2> {log}"
+    shell: "vg prune -t {threads} -k {wildcards.k} {input} > {output} 2> {log}"
 
 def list_pruned_cmps(wildcards):
     checkpoint_output = checkpoints.chunk_components.get(**wildcards).output[0]
-    return S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.cmps/cmp_{cmp}.pruned.{m}M.vg',
+    return S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.cmps/cmp_{cmp}.pruned.{k}k.vg',
                             method=wildcards.method, params=wildcards.params, dataset=wildcards.dataset,
-                            m=wildcards.m,
+                            k=wildcards.k,
                             cmp=glob_wildcards(os.path.join(checkpoint_output, "cmp_{cmp}.vg")).cmp))
 
 rule index_gcsa:
     input: list_pruned_cmps
     output:
-        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{m}M.gcsa'),
-        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{m}M.gcsa.lcp')
+        gcsa=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{k}k.gcsa'),
+        gcsalcp=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{k}k.gcsa.lcp')
     threads: 16
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gcsa-{m}M.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gcsa-{m}M.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-gcsa-{k}k.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-gcsa-{k}k.log')
     params:
         tmp_dir="temp_gsca_{method}_{params}_{dataset}"
     singularity:
