@@ -168,8 +168,7 @@ if len(reg_roots) > 0:
             shell("cp visualization-report.html {output}")
 
 rule prepare_viz_reads:
-    input: S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam', zip,
-                            method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
+    input: S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam', zip, method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
 
 ##
 ## Misc
