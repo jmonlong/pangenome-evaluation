@@ -648,7 +648,7 @@ rule odgi_viz:
         "docker://" + config['odgi_docker']
     shell:
         """
-        odgi build -g {input} -o - | odgi sort -O -i - -o - | odgi viz -i - -o {output} -x 1000 -y 500
+        odgi build -sO -g {input} -o - | odgi viz -i - -o {output} -x 1000 -y 500
         """
 
 ## Make test data
