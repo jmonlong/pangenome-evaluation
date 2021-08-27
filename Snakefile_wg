@@ -167,6 +167,10 @@ if len(reg_roots) > 0:
             shell("Rscript -e 'rmarkdown::render(\"visualization-report.Rmd\")' files.info {input.bed}")
             shell("cp visualization-report.html {output}")
 
+rule prepare_viz_reads:
+    input: S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam', zip,
+                            method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
+
 ##
 ## Misc
 ##
@@ -980,7 +984,35 @@ rule call_novcf_gbwt:
         """
 
 ruleorder: call_novcf_gbwt > call_novcf
-        
+
+##
+## Gam sorting for visualization
+##
+
+rule gaf_to_gam:
+    input:
+        gaf=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.gaf.gz'),
+        xg=xg_input
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.gam'
+    threads: 16
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-gaftogam-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-gaftogam-{read}.log')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell: "vg convert -t {threads} -F {input.gaf} {input.xg} > {output}"
+
+rule gamsort:
+    input: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.gam'
+    output:
+        gam=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam'),
+        gai=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam.gai')
+    threads: 16
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-gamsort-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-gamsort-{read}.log')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell: "vg gamsort -t {threads} -i {output.gai} {input} > {output.gam}"
+
 ##
 ## Map reads using GraphAligner
 ##
