@@ -11,6 +11,10 @@ SROOT=config['s3root']
 if 'vg_docker' not in config:
     config['vg_docker'] = 'quay.io/vgteam/vg:v1.31.0'
 
+# default odgi docker container
+if 'odgi_docker' not in config:
+    config['odgi_docker'] = 'quay.io/biocontainers/odgi:0.6--py38h8e3bb3f_1'
+
 # chromosome currently analyzed
 CHRS = ['chr' + str(ch) for ch in range(1,23)]
 CHRS += ['chrX', 'chrY', 'chrM']
@@ -638,7 +642,7 @@ rule odgi_viz:
     input: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.paths.{path}-{start}-{end}_c{context}.gfa')
     output: S3.remote(SROOT + '/{method}/{params}/subgraphs/{dataset}.{method}.{params}.{path}-{start}-{end}_c{context}.odgi.png')
     singularity:
-        "docker://quay.io/biocontainers/odgi:0.6--py38h8e3bb3f_1"        
+        "docker://" + config['odgi_docker']
     shell:
         """
         odgi build -g {input} -o - | odgi sort -i - -o - | odgi viz -i - -o {output} -x 1000 -y 500
