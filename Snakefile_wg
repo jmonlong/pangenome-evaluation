@@ -61,7 +61,7 @@ for exp in config['exp'].split():
         gbwt_mode = exp[3]
     # which mapper to use
     if len(mapper) == 1:
-        mapper_exp = mapper
+        mapper_exp = mapper[0]
     else:
         mapper_exp = mapper[ii]
     if mapper_exp == 'giraffe':
