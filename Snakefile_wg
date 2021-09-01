@@ -34,6 +34,8 @@ PARAMS = []
 DATASETS = []
 SRMAPPERS = []
 REFP = {}
+mapper=config['mapper'].split()
+ii = 0
 for exp in config['exp'].split():
     # split "experiment" into method, params. Optional: dataset, gbwt-mode
     # e.g.: vg/linear, cactus/feb1/CHM13-freeze1/paths
@@ -58,12 +60,15 @@ for exp in config['exp'].split():
     else:
         gbwt_mode = exp[3]
     # which mapper to use
-    mapper=config['mapper']
-    if mapper == 'giraffe':
-        mapper = 'giraffe{}k{}w{}'.format(config['min_k'], config['min_w'], gbwt_mode)
-    if mapper == 'vgmap':
-        mapper = 'vgmap{}'.format(gbwt_mode)
-    SRMAPPERS.append(mapper)
+    if len(mapper) == 1:
+        mapper_exp = mapper
+    else:
+        mapper_exp = mapper[ii]
+    if mapper_exp == 'giraffe':
+        mapper_exp = 'giraffe{}k{}w{}'.format(config['min_k'], config['min_w'], gbwt_mode)
+    if mapper_exp == 'vgmap':
+        mapper_exp = 'vgmap{}'.format(gbwt_mode)
+    SRMAPPERS.append(mapper_exp)
     # prefix for the reference chromosomes
     if 'ref_chr_prefix' not in config:
         REFP[exp[0]] = ''
@@ -71,6 +76,7 @@ for exp in config['exp'].split():
             REFP[exp[0]] = 'GRCh38.'
     else:
         REFP[exp[0]] = config['ref_chr_prefix']
+    ii += 1
 
 # how to name the graphs in the report. e.g. to simpify the names
 REPORT_ALIAS = expand('{dataset}/{method}/{params}', zip, method=METHODS, params=PARAMS, dataset=DATASETS)
