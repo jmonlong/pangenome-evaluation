@@ -121,10 +121,10 @@ def info_file_eval(wildcards):
         ifs['maplr'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_LR_LC + '.' + config['mapper_lr'] + '.stats.txt', zip,
                                         method=METHODS, params=PARAMS, dataset=DATASETS))
     if 'srcall' in eval_mods:
-        ifs['srcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf.bgz', zip,
+        ifs['srcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.q0.call.vcf.bgz', zip,
                                          method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
     if 'lrcall' in eval_mods:
-        ifs['lrcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_LR_HC + '.' + config['mapper_lr'] + '.call.vcf.bgz', zip,
+        ifs['lrcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_LR_HC + '.' + config['mapper_lr'] + '.q0.call.vcf.bgz', zip,
                                          method=METHODS, params=PARAMS, dataset=DATASETS))
     if 'snarl' in eval_mods:
         ifs['snarl'] = S3.remote(expand(SROOT + '/{method}/{params}/{dataset}.{method}.{params}.dist-stats.tsv.gz', zip,
@@ -922,45 +922,29 @@ rule map_vgmap:
         'vg map --gaf -t {threads} -x {input.xg} -g {input.gcsa} -f {input.f1} -f {input.f2} -N {wildcards.read} > {output} 2> {log}'
 
 # pack coverage from the reads
-rule pack_ga:
-    input:
-        gaf=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.gaf.gz'),
-        xg=xg_input
-    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.ga.pack')
-    threads: 4
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-ga-pack-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-ga-pack-{read}.log')
-    singularity:
-        "docker://" + config['vg_docker']
-    shell:
-        "vg pack -x {input.xg} -a {input.gaf} -Q 0 -t {threads} -o {output} 2> {log}"
-
-# pack coverage from the reads
 rule pack:
     input:
         gaf=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.gaf.gz'),
         xg=xg_input
-    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.pack')
+    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.q{q}.pack')
     threads: 4
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-pack-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-pack-{read}.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-pack-q{q}-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-pack-q{q}-{read}.log')
     singularity:
         "docker://" + config['vg_docker']
     shell:
-        "vg pack -x {input.xg} -a {input.gaf} -Q 5 -t {threads} -o {output} 2> {log}"
-
-ruleorder: pack_ga > pack
+        "vg pack -x {input.xg} -a {input.gaf} -Q {wildcards.q} -t {threads} -o {output} 2> {log}"
 
 # call variants from the packed read coverage
 rule call_novcf:
     input:
-        pack=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.pack'),
+        pack=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.q{q}.pack'),
         xg=xg_input,
         snarls=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.snarls')
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.call.vcf'
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.q{q}.call.vcf'
     threads: 8
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-call-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-call-{read}.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-call-q{q}-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-call-q{q}-{read}.log')
     singularity:
         "docker://" + config['vg_docker']
     shell:
@@ -971,14 +955,14 @@ rule call_novcf:
 
 rule call_novcf_gbwt:
     input:
-        pack=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.pack'),
+        pack=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.q{q}.pack'),
         xg=xg_input,
         gbwt=gbwt_input,
         snarls=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.snarls')
-    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.call.vcf'
+    output: '{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.q{q}.call.vcf'
     threads: 8
-    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-{read}.benchmark.tsv')
-    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-{read}.log')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-q{q}-{read}.benchmark.tsv')
+    log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-giraffe{k}k{w}w{n}-call-q{q}-{read}.log')
     singularity:
         "docker://" + config['vg_docker']
     params:
