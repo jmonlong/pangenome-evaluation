@@ -22,6 +22,7 @@ CHRS += ['chrX', 'chrY', 'chrM']
 # readset names
 READS_SR_LC = 'HG002_5M' # short-reads, low-coverage
 READS_SR_HC = 'HG002' # short-reads, high-coverage (e.g. for variant calling)
+READS_SR_40X = 'HG002_40x' # short-reads, high-coverage (e.g. for variant calling)
 READS_LR_LC= 'HG002-SequelII-merged_15kb_20kb-pbmm2.ss001' # CSS reads, low-coverage
 READS_LR_HC= 'HG002-SequelII-merged_15kb_20kb-pbmm2' # CSS reads, 10x coverage
 
@@ -123,6 +124,9 @@ def info_file_eval(wildcards):
     if 'srcall' in eval_mods:
         ifs['srcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.q0.call.vcf.bgz', zip,
                                          method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
+    if 'srcall40x' in eval_mods:
+        ifs['srcall40x'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.q0.call.vcf.bgz', zip,
+                                            method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_40X, mapper=SRMAPPERS))
     if 'lrcall' in eval_mods:
         ifs['lrcall'] = S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.' + READS_LR_HC + '.' + config['mapper_lr'] + '.q0.call.vcf.bgz', zip,
                                          method=METHODS, params=PARAMS, dataset=DATASETS))
@@ -702,6 +706,15 @@ rule real_reads_hg002_ccs:
     output: S3.remote(SROOT + '/reads/HG002-SequelII-merged_15kb_20kb-pbmm2.fastq.gz')
     shell: "samtools fastq {input.bam} | gzip > {output}"
 
+rule dwl_hg002_novaseq_40x:
+    output:
+        r1=S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.40x.R1.fastq.gz'),
+        r2=S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.40x.R2.fastq.gz')
+    shell:
+        """
+        wget -nv -O {output.r1} https://storage.googleapis.com/brain-genomics-public/research/sequencing/fastq/novaseq/wgs_pcr_free/40x/HG002.novaseq.pcr-free.40x.R1.fastq.gz
+        wget -nv -O {output.r2} https://storage.googleapis.com/brain-genomics-public/research/sequencing/fastq/novaseq/wgs_pcr_free/40x/HG002.novaseq.pcr-free.40x.R2.fastq.gz
+        """
 
 ##
 ## Map reads using vg
@@ -880,11 +893,15 @@ rule index_gcsa_gbwt:
 def r1_input(wildcards):
     if wildcards.read == READS_SR_HC:
         return S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.20x.R1.fastq.gz')
+    elif wildcards.read == READS_SR_40X:
+        return S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.40x.R1.fastq.gz')
     else:
         return S3.remote(SROOT + '/reads/{read}_1.fastq.gz'.format(read=wildcards.read))
 def r2_input(wildcards):
     if wildcards.read == READS_SR_HC:
         return S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.20x.R2.fastq.gz')
+    elif wildcards.read == READS_SR_40X:
+        return S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.40x.R2.fastq.gz')
     else:
         return S3.remote(SROOT + '/reads/{read}_2.fastq.gz'.format(read=wildcards.read))
 rule map_giraffe:
