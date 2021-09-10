@@ -707,14 +707,9 @@ rule real_reads_hg002_ccs:
     shell: "samtools fastq {input.bam} | gzip > {output}"
 
 rule dwl_hg002_novaseq_40x:
-    output:
-        r1=S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.40x.R1.fastq.gz'),
-        r2=S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.40x.R2.fastq.gz')
-    shell:
-        """
-        wget -nv -O {output.r1} https://storage.googleapis.com/brain-genomics-public/research/sequencing/fastq/novaseq/wgs_pcr_free/40x/HG002.novaseq.pcr-free.40x.R1.fastq.gz
-        wget -nv -O {output.r2} https://storage.googleapis.com/brain-genomics-public/research/sequencing/fastq/novaseq/wgs_pcr_free/40x/HG002.novaseq.pcr-free.40x.R2.fastq.gz
-        """
+    output: S3.remote(SROOT + '/reads/HG002.novaseq.pcr-free.40x.R{r}.fastq.gz')
+    shell: "wget -nv -O {output} https://storage.googleapis.com/brain-genomics-public/research/sequencing/fastq/novaseq/wgs_pcr_free/40x/HG002.novaseq.pcr-free.40x.R{wildcards.r}.fastq.gz"
+
 
 ##
 ## Map reads using vg

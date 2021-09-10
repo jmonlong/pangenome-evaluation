@@ -11,7 +11,7 @@ mapper: "giraffe vgmap vgmap giraffe giraffe giraffe giraffe giraffe giraffe"
 min_k: 29
 min_w: 11
 cover_n: 16
-map_cores: 16
+map_cores: 32
 ## other mapping
 mapper_lr: "ga"
 ## regions to visualize
