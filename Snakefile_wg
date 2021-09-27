@@ -184,9 +184,7 @@ rule prepare_viz_reads:
     input: S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam', zip, method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
 
 rule prepare_tubemap:
-    input: expand('{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}', method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS, chunk=CHUNK_PATH.keys())
-    output: S3.remote(expand(SROOT + '/{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks.tar.gz', method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
-    shell: "tar -czvf {output} {input}"
+    input: S3.remote(expand(SROOT + '/{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}.tar.gz', method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS, chunk=CHUNK_PATH.keys())
 
 ##
 ## Misc
@@ -682,8 +680,16 @@ rule chunk_for_tubemap:
     shell:
         """
         mkdir -p {output}
+        date > {output}/time.txt
         vg chunk -x {input.xg} -G {input.gbwt} -a {input.gam} -g -c 20 -p {params.region} -T -b {output}/chunk -E {output}/regions.tsv > {output}/chunk.vg
+        date >> {output}/time.txt
         """
+
+rule tar_tubemap_chunk:
+    input: '{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}'
+    output: S3.remote(SROOT + '/{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}.tar.gz')
+    shell: "tar -czvf {output} {input}"
+
 
 ## Make test data
 # rule gamsort:
