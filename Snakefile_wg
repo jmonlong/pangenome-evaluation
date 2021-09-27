@@ -184,7 +184,9 @@ rule prepare_viz_reads:
     input: S3.remote(expand(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam', zip, method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
 
 rule prepare_tubemap:
-    input: S3.remote(expand(SROOT + '/{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}', method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS, chunk=CHUNK_PATH.keys()))
+    input: expand('{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}', method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS, chunk=CHUNK_PATH.keys())
+    output: S3.remote(expand(SROOT + '/{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks.tar.gz', method=METHODS, params=PARAMS, dataset=DATASETS, read=READS_SR_HC, mapper=SRMAPPERS))
+    shell: "tar -czvf {output} {input}"
 
 ##
 ## Misc
@@ -673,7 +675,7 @@ rule chunk_for_tubemap:
         gbwt=gbwt_input,
         gam=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.sorted.gam'),
         gai=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.giraffe{k}k{w}w{n}.sorted.gam.gai')
-    output: directory(S3.remote(SROOT + '/{method}/{params}/for_tubemap.{dataset}.{read}.giraffe{k}k{w}w{n}.chunks/{chunkid}'))
+    output: directory('{method}/{params}/for_tubemap.{dataset}.{read}.giraffe{k}k{w}w{n}.chunks/{chunkid}')
     params: region=lambda wildcards: CHUNK_PATH[wildcards.chunkid]
     singularity:
         "docker://" + config['vg_docker']
