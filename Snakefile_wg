@@ -690,6 +690,7 @@ rule tar_tubemap_chunk:
     output: S3.remote(SROOT + '/{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}.tar.gz')
     shell: "tar -czvf {output} {input}"
 
+ruleorder: tar_tubemap_chunk > gzip
 
 ## Make test data
 # rule gamsort:
