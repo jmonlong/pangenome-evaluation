@@ -689,7 +689,7 @@ rule chunk_for_tubemap:
 rule tar_tubemap_chunk:
     input: '{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}'
     output: S3.remote(SROOT + '/{method}/{params}/for_tubemap.{dataset}.{read}.{mapper}.chunks/{chunk}.tar.gz')
-    shell: "tar -czvf {output} {input}"
+    shell: "tar -C {input}/.. -czvf {output} {wildcards.chunk}"
 
 ruleorder: tar_tubemap_chunk > gzip
 
