@@ -1026,7 +1026,7 @@ rule gaf_to_gam:
     input:
         gaf=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.gaf.gz'),
         xg=xg_input
-    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.gam')
+    output: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.unsorted.gam')
     threads: 16
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.{method}.{params}.mapvg-{mapper}-gaftogam-{read}.benchmark.tsv')
     log: S3.remote(SROOT + '/logs/{dataset}.{method}.{params}.mapvg-{mapper}-gaftogam-{read}.log')
@@ -1035,7 +1035,7 @@ rule gaf_to_gam:
     shell: "vg convert -t {threads} -F {input.gaf} {input.xg} > {output}"
 
 rule gamsort:
-    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.gam')
+    input: S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.unsorted.gam')
     output:
         gam=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam'),
         gai=S3.remote(SROOT + '/{method}/{params}/map/{dataset}.{method}.{params}.{read}.{mapper}.sorted.gam.gai')
