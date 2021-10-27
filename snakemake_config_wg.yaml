@@ -14,6 +14,10 @@ cover_n: 16
 map_cores: 32
 ## other mapping
 mapper_lr: "ga"
+## vg genotyping
+call_a: false
+pack_q: 5
+pack_s: 0
 ## regions to visualize
 viz_bed: "pangenome-viz-regions-wg.bed"
 ## input s3 links
