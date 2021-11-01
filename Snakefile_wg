@@ -351,10 +351,10 @@ rule gfa_to_xg:
         """
         
 rule gfa_to_xg_gbwt_pggb:
-    input: gfa_input
+    input: S3.remote(SROOT + '/pggb/{params}/{dataset}.pggb.{params}.gfa.gz')
     output:
         xg=S3.remote(SROOT + '/pggb/{params}/{dataset}.pggb.{params}.xg'),
-        gbwt=S3.remote(SROOT + '/pggb/{params}/map/{dataset}.pggb.{params}.paths.gbwt'),
+        gbwt=S3.remote(SROOT + '/pggb/{params}/map/{dataset}.pggb.{params}.paths.gbwt')
     threads: 8
     benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.pggb.{params}.gfa-to-vg.benchmark.tsv')
     params:
