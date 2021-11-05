@@ -1,13 +1,13 @@
 ## dataset
 dataset: "GRCh38-freeze1"
 ## experiments
-exp: "vg/linear cactus/f1g-90-mc-aug11/GRCh38-freeze1/45k cactus/f1g-90-mc-aug11/GRCh38-freeze1/64k cactus/f1g-90-mc-aug11/GRCh38-freeze1 cactus/f1g-90-mc-aug11-clip-d2-m1000 minigraph/f1g-90/GRCh38-freeze1/paths vg/linear/CHM13-freeze1 cactus/f1g-90-mc-aug11/CHM13-freeze1 minigraph/f1g-90/CHM13-freeze1/paths"
+exp: "vg/linear cactus/f1g-90-mc-aug11/GRCh38-freeze1/45k cactus/f1g-90-mc-aug11/GRCh38-freeze1 minigraph/f1g-90/GRCh38-freeze1/paths vg/linear/CHM13-freeze1 cactus/f1g-90-mc-aug11/CHM13-freeze1 minigraph/f1g-90/CHM13-freeze1/paths"
 ## alias for reports
-report_alias: 'GRCH38.linear GRCh38.minigraph.cactus.map.pruneK45 GRCh38.minigraph.cactus.map.pruneK64 GRCh38.minigraph.cactus GRCh38.minigraph.cactus.clipped GRCh38.minigraph CHM13.linear CHM13.minigraph.cactus.jul7 CHM13.minigraph'
+report_alias: 'GRCH38.linear GRCh38.minigraph.cactus.map.pruneK45 GRCh38.minigraph.cactus GRCh38.minigraph CHM13.linear CHM13.minigraph.cactus.jul7 CHM13.minigraph'
 ## s3 root bucket
 s3root: 'vg-k8s/vgamb/wg'
 ## vg mapping
-mapper: "giraffe vgmap vgmap giraffe giraffe giraffe giraffe giraffe giraffe"
+mapper: "giraffe vgmap giraffe giraffe giraffe giraffe giraffe"
 min_k: 29
 min_w: 11
 cover_n: 16

@@ -4,7 +4,7 @@
 
 ## Docker container
 
-For now, feel free to use `jmonlong/job-vgamb:3`.
+For now, feel free to use `quay.io/jmonlong/job-vgamb:4`.
 
 It was built using [Dockerfile](Dockerfile).
 Now that the Snakemake pipeline uses Singularity, the plan is to strip down most tools from it to leave only Snakemake, Singularity and a few basic tools (e.g. bcftools).
@@ -65,7 +65,7 @@ Eventually, we should maybe split this into separate evaluation and construction
 
 ## Running on our kubernetes server
 
-Start an instance with the `jmonlong/job-vgamb:3` docker image.
+Start an instance with the `jmonlong/job-vgamb:4` docker image.
 You also need to add the following in your kubernetes launching config to be able to use Singularity:
 
 ```yaml
