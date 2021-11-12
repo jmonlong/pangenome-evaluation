@@ -1,13 +1,13 @@
 ## dataset
 dataset: "GRCh38-freeze1"
 ## experiments
-exp: "vg/linear cactus/f1g-90-mc-aug11/GRCh38-freeze1 minigraph/f1g-90/GRCh38-freeze1/paths vg/linear/CHM13-freeze1 cactus/f1g-90-mc-aug11/CHM13-freeze1 minigraph/f1g-90/CHM13-freeze1/paths"
+exp: "vg/linear vg/1kgp-filter cactus/f1g-90-mc-aug11/GRCh38-freeze1 minigraph/f1g-90/GRCh38-freeze1/paths vg/linear/CHM13-freeze1 cactus/f1g-90-mc-aug11/CHM13-freeze1 minigraph/f1g-90/CHM13-freeze1/paths"
 ## alias for reports
-report_alias: 'GRCH38.linear GRCh38.minigraph.cactus GRCh38.minigraph CHM13.linear CHM13.minigraph.cactus CHM13.minigraph'
+report_alias: 'GRCH38.linear GRCh38.1KGP GRCh38.minigraph.cactus GRCh38.minigraph CHM13.linear CHM13.minigraph.cactus CHM13.minigraph'
 ## s3 root bucket
 s3root: 'vg-k8s/vgamb/wg'
 ## vg mapping
-mapper: "giraffe giraffe giraffe giraffe giraffe giraffe"
+mapper: "giraffe"
 min_k: 29
 min_w: 11
 cover_n: 16
