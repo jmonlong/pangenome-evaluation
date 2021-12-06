@@ -349,6 +349,39 @@ rule gfa_to_xg:
         vg index -p -t {threads} -x {output} {params.tmp_vg}
         rm {params.tmp_gfa} {params.tmp_vg}
         """
+        
+rule gfa_to_gbwt_pggb:
+    input: S3.remote(SROOT + '/pggb/{params}/{dataset}.pggb.{params}.gfa.gz')
+    output:
+        gbwt=S3.remote(SROOT + '/pggb/{params}/map/{dataset}.pggb.{params}.paths.gbwt'),
+        gg=S3.remote(SROOT + '/pggb/{params}/map/{dataset}.pggb.{params}.paths.gg')
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.pggb.{params}.gfa-to-gbwt.benchmark.tsv')
+    params:
+        tmp_gfa="{dataset}.pggb.{params}.gfa"
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        """
+        zcat {input} > {params.tmp_gfa}
+        vg gbwt -G {params.tmp_gfa} -g {output.gg} -o {output.gbwt} -p --path-regex "(.*)#(.*)" --path-fields _SC
+        rm {params.tmp_gfa}
+        """
+
+rule gbwt_to_xg_pggb:
+    input:
+        gbwt=S3.remote(SROOT + '/pggb/{params}/map/{dataset}.pggb.{params}.paths.gbwt'),
+        gg=S3.remote(SROOT + '/pggb/{params}/map/{dataset}.pggb.{params}.paths.gg')
+    output: S3.remote(SROOT + '/pggb/{params}/{dataset}.pggb.{params}.xg')
+    threads: 8
+    benchmark: S3.remote(SROOT + '/benchmarks/{dataset}.pggb.{params}.gbwt-to-xg.benchmark.tsv')
+    singularity:
+        "docker://" + config['vg_docker']
+    shell:
+        """
+        vg convert -t {threads} -b {input.gbwt} --ref-sample grch38 -x {input.gg} > {output}
+        """
+
+ruleorder: gfa_to_gbwt_pggb > gbwt_to_xg_pggb > gfa_to_xg > index_gbwt_paths
 
 def pg_input(wildcards):
     in_path = '{method}/{params}/{dataset}.{method}.{params}.pg'.format(method=wildcards.method,
